@@ -11,7 +11,7 @@ metrics used in this study") + Online Methods.
 ## A. Parametrised power spectrum
 
 | Code identifier | Display label | Manuscript (Table 1) |
-|---|---|---|---|
+|---|---|---|
 | `offset` | "Offset" | **Offset** |
 | `slope` | "Slope" | **Slope** (aperiodic exponent) |
 | `alpha_freq` to `peak_freq` | "Peak Freq." | **Peak Frequency** |
@@ -31,8 +31,8 @@ metrics used in this study") + Online Methods.
 
 ## B. Cycle-by-cycle burst analysis
 
-| Code identifier | Kind | Display label | Manuscript (Table 1) |
-|---|---|---|---|
+| Code identifier | Display label | Manuscript (Table 1) |
+|---|---|---|
 | `volt_amp` | "Volt. Amp." | **Voltage Amplitude** (Absolute) |
 | `volt_amp_corrected` | "Corrected Volt. Amp." | **Voltage Amplitude** (Corrected) |
 | `band_amp` | "Band Amp." | **Band Amplitude** (Absolute) |
@@ -48,7 +48,7 @@ metrics used in this study") + Online Methods.
 ## C. Rhythmicity (Lagged Autocoherence Hilbert)
 
 | Code identifier | Display label | Manuscript (Table 1) |
-|---|---|---|---|
+|---|---|---|
 | `alpha_LAcH` | "Lifespan" | **Lifespan** |
 | `LAcH` | "LAcH" | **LAcH** (Lagged Autocoherence Hilbert) |
 | `cLAcH` | LAcH normalised per electrode × frequency |
@@ -60,7 +60,7 @@ metrics used in this study") + Online Methods.
 Four related quantities. They are **not** interchangeable.
 
 | Code identifier | Source | Meaning |
-|---|---|---|---|
+|---|---|---|
 | `epochs` | Python Code | **Count** of retained artefact-free epochs, per electrode. Model covariate; filtered against `EPOCHS_THRESHOLD`. |
 | `epochsprop` | Python Code | **Proportion** kept by the interim R² selection (`epochs_included / num_epochs`). Not used in this study|
 | `totalepochs` | Python Code | Epoch count **before** selection. Not used in this study. |
@@ -71,7 +71,7 @@ Four related quantities. They are **not** interchangeable.
 ## E. Cross-cutting
 
 | Code identifier | Display label | Meaning |
-|---|---|---|---|
+|---|---|---|
 | `sujid` | Participant identifier |
 | `session_age` | "Visit" | Visit age in months (1, 6, 12, 15→18, 30, 36, 42, 48) |
 | `age_months` | "Age (months)" | Exact chronological age at visit. Used in the GAMM smooth term |
@@ -89,7 +89,7 @@ Four related quantities. They are **not** interchangeable.
 ## F. Statistical output columns
 
 Emitted by `nn_supp_table()` into the numbered supplementary tables (`README.md` §3).
-Display labels are what appears in `Supplementary_Statistical_Tables.xlsx`.
+Display labels are what appear in `Supplementary_Statistical_Tables.xlsx`.
 
 | Code identifier | Display label | Meaning |
 |---|---|---|
@@ -152,7 +152,7 @@ Set once in `config_paths.R`; every other path is derived from these four.
 
 ## J. Convention
 
-| Domain |
+| Domain |  |
 |---|---|
 | Proportions | `prop_*` (a ratio in [0, 1]) |
 | Unit of segmentation | `epoch` |
