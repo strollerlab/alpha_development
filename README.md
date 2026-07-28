@@ -8,7 +8,7 @@ datasets, fits the statistical models, and renders every figure and table in the
 manuscript and supplement.
 
 This README covers (1) getting it running, (2) the output taxonomy, (3) the
-supplementary-statistics pipeline, and (4) the naming convention. For the identifier ↔ manuscript-term lookup tables, see
+supplementary-statistics pipeline, and (4) the naming convention. For the identifier correspondence between column names and manuscript-term lookup tables, see
 `NOMENCLATURE_CROSSWALK.md`.
 
 ---
@@ -16,7 +16,7 @@ supplementary-statistics pipeline, and (4) the naming convention. For the identi
 ## 1. Quick start
 
 ### Prerequisites
-- **Python** 3.10 with `specparam`, MNE and `bycycle`, and complementary Python codes. 
+- **Python** 3.10 with `specparam`, MNE, and `bycycle`, and complementary Python codes. 
 - **R** ≥ 4.2 with the packages installed by `00_Setup_PackageInstallation.R`
   (mgcv, gratia, lme4, lmerTest, emmeans, performance, flextable, openxlsx,
   tidyverse, etc.).
@@ -31,24 +31,25 @@ action; no path appears anywhere else in the R codebase.
 | Variable | Points at |
 |---|---|
 | `path2code` | The folder where the code lies (i.e., this folder)
-| `path2data` | `Data/Merged/` — the merged cross-visit CSVs the analyses read |
+| `path2data` | `Data/` — the merged cross-visit CSVs the analyses read |
 | `path2sets` | `Data/` — per-visit CSVs written by `DatasetCreation_*` and the Python stage |
 | `path2root` | where `Results/` should be created (need not exist yet) |
 
-`config_paths.R` expands `~`, tolerates a missing trailing slash, creates
-`path2root` if absent, and **stops with a named error** if any input directory is
-missing — so a mistyped path fails immediately rather than halfway through a model
+`config_paths.R` expands `~`, creates
+`path2root`, if absent, and **stops with a named error** if any input directory is
+missing. This way, a mistyped path fails immediately rather than halfway through a model
 fit.
 
 Each script locates `config_paths.R` itself: it checks the working directory, the
-parent folder, and a `Code/` subfolder. If none of those work — for example when
-running with `Rscript` from an unrelated directory — set `CODE_FOLDER` on the
+parent folder, and a `Code/` subfolder. If none of those work, for example when
+running with `Rscript` from an unrelated directory, set `CODE_FOLDER` on the
 second line of the script, or `setwd()` to this folder. The script stops with a
-message naming both options and printing the directory it searched from.
-
-`AlphaBurstRhythm.Rproj` is a convenience only: double-clicking it makes RStudio
-set the working directory here, so the first candidate resolves. It is not
-required and has no effect outside RStudio.
+message naming both options and printing the directory it searched from. The easiest 
+way to avoid such an error is to download all the code and set it in the same folder 
+in which `AlphaBurstRhythm.Rproj` is located. This R project is a convenience function
+only. Double-clicking it makes RStudio set the working directory to the folder where it is located.
+Because all the code should ideally be in the same folder, this makes that the first requisite  
+automatically fulfilled. It has no other effect on the code. 
 
 Python and MATLAB have their own small config blocks at the top of the entry-point
 files (`CODE_DIR` / `SET_DIR` / `DATA_DIR`, and `Path2*` respectively). Set
@@ -59,10 +60,9 @@ output.
 
 Scripts are numbered for execution order; dataset creation must precede analysis.
 For data privacy, clean EEG sets after MADE preprocessing are not available in the repository, so the Python stage is not runnable. 
-This also limits running DatasetCreation_1a/1b, which require the Python output and SupplementaryMethods_1. This doesn't mean these codes 
-are not functional. Instead, our Python codes and DatasetCreation scripts are easily adaptable. With very few modifications, our Python codes 
-can process clean-epoched EEG data from EEGlab, generating single-children outputs with most of the metrics of interest.
-The rest of the pipeline can be run with the merged CSVs in `Data/Merged/`.
+This also limits running DatasetCreation_1a/b and DatasetCreation_2a/b, which require the Python output, and also limits running SupplementaryMethods_1. However, this doesn't mean these codes are not functional. Instead, our Python codes are easily adaptable. With very few modifications, our Python codes can process clean-epoched EEG data from EEGlab, generating single-child outputs with most of the metrics of interest.
+Then, if adapted in terms of structure, DatasetCreation_* can be easily implemented to compute definitive metrics of the study.
+The rest of the pipeline can be run with the anonymized merged CSVs in `Data/`.
 
 ```
 # --- Python feature extraction (§4a; run once per subject, before R) ---
@@ -92,7 +92,7 @@ Figure_1_Code.R
 Figures_2_3_4_Code.R
 Figures_S3_S4_S5_topomaps_fieldtrip.m           # MATLAB; needs DatasetCreation_4 output
 
-# --- Supplementary methods / results ---
+# --- Supplementary methods/results ---
 SupplementaryMethods_1_ParametrizedPSD_RangeSelection.R
 SupplementaryMethods_2_ParametrizedPSD_FinalRange_Descriptives.R
 SupplementaryMethods_3_Lifespan_RangeSelection.R
@@ -132,22 +132,22 @@ Results/
     ├── SupplementaryMethods/  Table SM1, S6, range-comparison tables
     ├── SupplementaryResults/  ROI-stratified GAMM tables, adj-epoch tables
     └── SupplementaryTables/   ★ Table_SR1.csv … Table_SM3.csv
-        └── Supplementary_Statistical_Tables.xlsx   ★ the submitted file
+        └── Supplementary_Statistical_Tables.xlsx   ★ the submitted XLSX file with all the statistical details.
 ```
 
 ### Organization
 
 - **Descriptive tables live in `Tables/Descriptives/`** by *content*, even when the
   manuscript numbers them with an "S" (Table S2, S3, S4). The exception is Table S6,
-  a parametrisation-quality descriptive discussed inside *Supplementary Methods*;
-  it is filed there to match the prose.
+  a parametrisation-quality descriptive discussed inside *Supplementary Methods*.
 - **Main-text result tables** split by analysis into `Development`, `BurstImpact`
-  and `AlphaPrediction`, matching the three Results sections.
-- **`Tables/SupplementaryTables/`** and holds the numbered statistical
+  and `AlphaPrediction`, matching the three Results sections. These mimic the result tables in
+  the XLSX file but are separated by analysis and formatted in HTML.
+- **`Tables/SupplementaryTables/`** holds the numbered statistical
   tables that accompany the submission. The HTML tables elsewhere are
   unchanged and remain the at-a-glance view. 
 - **`Tables/SupplementaryMethods or SupplementaryResults`** Besides the general statistics tables in 
-  the xslx that are assembled. For readability, our code also generates HTML tables elsewhere with the 
+  the XLSX that are assembled. For readability, our code also generates HTML tables elsewhere with the 
   same statistics. The HTML tables are unchanged and remain the at-a-glance view.
 - A script emitting more than one category writes to more than one sink and declares
   extra path variables (`path2suppfig`), all derived from
@@ -178,7 +178,7 @@ Results/
 
 ---
 
-## 3. Auxiliar Code to Generate Supplementary Table Statistics
+## 3. Auxiliary Code to Generate Supplementary Table Statistics
 
 The model-output tables are too large to typeset in the manuscript, so they ship as
 a data file. Two files implement this; no analysis script needed restructuring.
@@ -192,8 +192,8 @@ a data file. Two files implement this; no analysis script needed restructuring.
 | `nn_lmer_df(model, term)` | Satterthwaite df for one `lmerTest` term; warns loudly if the model was fitted with `lme4::lmer` instead. |
 | `nn_save_table(ft, dir, stem)` | Saves a flextable as HTML and optionally Word in one call. |
 
-`NN_TABLE_INDEX` at the top of the file is the **single place** table numbers,
-captions and column groupings are declared. Renumbering is one edit there.
+`NN_TABLE_INDEX` at the top of the file is the **single place** where table numbers,
+captions, and column groupings are declared. Renumbering is one edit there.
 
 ### `SupplementaryData_BuildWorkbook.R` — run last
 
@@ -236,27 +236,20 @@ the reference df, and their parametric terms based on the residual df, which is 
 Two entry points turn raw EEG into the per-subject CSVs that `DatasetCreation_` 
 and `SupplementaryMethods_1_RangeSelection.R` use. They rest on two libraries that **cannot be imported**. 
 Therefore, never run directly because it will crash. Yet, these codes are functional, and with some adjustments
-can be run in other datasets.
+can be run on other datasets.
 
 | Module | Role |
 |---|---|
 | `convenience_functions_jrp.py` (imported as `jrpc`) | Shared toolkit: PSD estimation, lagged coherence, specparam trial selection, CSV writer. No `__main__`. |
 | `lagged_autocoherence.py` (imported as `la`) | LAcH reference implementation, adapted from Zhang et al. (2025), *Imaging Neuroscience*. Imported by `EEG_metrics_rest_NN.py`. |
-| `EEG_metrics_rest_NN.py` | **Data generated.** `aperosc_parameters*.csv`, `psds*.csv`, `burst_properties_bycycle.csv`, `lagged_coh_py_hilb*.csv` → feeds `DatasetCreation_1a`, `2a`. |
-| `EEG_metrics_rest_NN_basedonbursts.py` | **Data generated.** Burst-conditioned `aperosc_parameters_burst*.csv`, `psds_burst*.csv`, `lagged_coh_py_hilb*_burst.csv` → feeds `DatasetCreation_1b`. |
-
-### `renaming.R` — legacy CSV migration (optional, one-off). It is a convenience tool 
-to rename columns across datasets.Only needed for CSVs produced *before* the naming standardisation; 
-it rewrites their column headers to the current convention. **Not** part of the normal run order.
-Defaults to `DRY_RUN <- TRUE` (reports, writes nothing), keeps a `.bak` per file, is
-idempotent, and hard-stops on ambiguity rather than corrupting a column. Run it dry
-first — it rewrites in place, recursively, over every CSV under `path2sets`.
+| `EEG_metrics_rest_NN.py` | **Data generated.** `aperosc_parameters*.csv`, `psds*.csv`, `burst_properties_bycycle.csv`, `lagged_coh_py_hilb*.csv`. Its output is used in `DatasetCreation_1a`, `2a`. |
+| `EEG_metrics_rest_NN_basedonbursts.py` | **Data generated.** Burst-conditioned `aperosc_parameters_burst*.csv`, `psds_burst*.csv`, `lagged_coh_py_hilb*_burst.csv`. Its output is used in `DatasetCreation_1b`. |
 
 ---
 
 ## 5. Naming convention
 
-`NOMENCLATURE_CROSSWALK.md` is the lookup table.
+`NOMENCLATURE_CROSSWALK.md` contains all the information regarding the equivalence. Below you can find a summary of the equivalence of the column to the manuscript term.
 
 | Domain | Canonical | Rationale |
 |---|---|---|
