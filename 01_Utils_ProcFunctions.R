@@ -22,11 +22,11 @@ local({
 # Script: 01_Utils_ProcFunctions.R
 # Purpose: Utility functions shared across analysis scripts.
 #          - has_converged()             : checks lmer convergence
-#          - proc_iter()                 : iterative GLMER classification with ROC 
+#          - proc_iter()                : iterative GLMER classification with ROC 
 #          - median_se()                 : median ± SE stat summary for ggplot2
 #          - proc_graph_ggplot2()        : plots mean ROC curve from proc_iter output
-#          - add_stat_pairwise_wilcox()  : paired Wilcoxon test for gtsummary
-#         - add_stat_overall_friedman()  : Friedman test for gtsummary
+#          - add_stat_pairwise_wilcox() : paired Wilcoxon test for gtsummary
+#         - add_stat_overall_friedman() : Friedman test for gtsummary
 # =============================================================================
 # Inputs:  None (defines functions only — source this script, do not run standalone)
 # Outputs: None
@@ -64,8 +64,8 @@ has_converged = function(model) {
 # 
 # Returns a list:
 #   $auc, $accuracy, $sensitivity, $specificity, $precision, $f1, $brier, $mcc
-#   $results  : data frame of per-iteration coefficient estimates
-#   $roc      : list of pROC roc objects (one per iteration)
+#   $results : data frame of per-iteration coefficient estimates
+#   $roc     : list of pROC roc objects (one per iteration)
 
 proc_iter = function(dataset, n_iter, dep_var, fixed_eff, rand_eff, covariates = NULL) {
 
@@ -118,7 +118,6 @@ proc_iter = function(dataset, n_iter, dep_var, fixed_eff, rand_eff, covariates =
 
     common_ids = intersect(train_data_bal$sujid, test_data_bal$sujid)
     if (!setequal(train_data_bal$sujid, test_data_bal$sujid)) {
-      message("Mismatch detected: filtering to common participants.")
       train_data_bal = train_data_bal[train_data_bal$sujid %in% common_ids, ]
       test_data_bal  = test_data_bal[test_data_bal$sujid  %in% common_ids, ]
     }
@@ -160,7 +159,7 @@ proc_iter = function(dataset, n_iter, dep_var, fixed_eff, rand_eff, covariates =
     FP = sum(predicted_class == 1 & test_data_bal[[dep_var]] == 0, na.rm = TRUE)
     FN = sum(predicted_class == 0 & test_data_bal[[dep_var]] == 1, na.rm = TRUE)
 
-    # Matthews Correlation Coefficient (balanced metric suitable for binary classification with potential class imbalance)
+    # Matthews Correlation Coefficient
     mcc_den = sqrt(as.numeric(TP + FP) * as.numeric(TP + FN) *
                    as.numeric(TN + FP) * as.numeric(TN + FN))
     mcc_values[i] = if (mcc_den == 0) 0 else
@@ -264,11 +263,11 @@ proc_graph_ggplot2 = function(roc_list) {
 # as bold in the gtsummary table.
 #
 # Parameters:
-#   data     : data frame (passed automatically by gtsummary)
-#   variable : name of the dependent variable (string)
-#   by       : name of the grouping variable (string)
-#   id_var   : name of the subject identifier column (string)
-#   method   : p-value correction method (default "fdr")
+#   data    : data frame (passed automatically by gtsummary)
+#   variable: name of the dependent variable (string)
+#   by      : name of the grouping variable (string)
+#   id_var  : name of the subject identifier column (string)
+#   method  : p-value correction method (default "fdr")
 
 
 add_stat_pairwise_wilcox = function(data, variable, by, id_var, method = "fdr", ...) {
@@ -325,10 +324,10 @@ add_stat_pairwise_wilcox = function(data, variable, by, id_var, method = "fdr", 
 # Returns a one-row data frame with formatted test result "Chi²=X; p=Y".
 #
 # Parameters:
-#   data     : data frame (passed automatically by gtsummary)
-#   variable : name of the dependent variable (string)
-#   by       : name of the grouping variable (string)
-#   id_var   : name of the subject identifier column (string)
+#   data    : data frame (passed automatically by gtsummary)
+#   variable: name of the dependent variable (string)
+#   by      : name of the grouping variable (string)
+#   id_var  : name of the subject identifier column (string)
 #
 
 add_stat_overall_friedman = function(data, variable, by, id_var, ...) {
