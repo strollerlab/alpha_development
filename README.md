@@ -3,12 +3,13 @@
 Reproducibility code for *"The emergence and maturation of the infant alpha peak
 reflect a transition from transient bursts to sustained oscillations."*
 
-Python, R and MATLAB code that extracts the EEG metrics, builds the analysis
+Python, R, and MATLAB code that extracts the EEG metrics, builds the analysis
 datasets, fits the statistical models, and renders every figure and table in the
-manuscript and supplement.
+manuscript and supplement. All the data to run the analysis can be found in the 
+companion OSF data repository ().
 
 This README covers (1) getting it running, (2) the output taxonomy, (3) the
-supplementary-statistics pipeline, and (4) the naming convention. For the identifier correspondence between column names and manuscript-term lookup tables, see
+supplementary-statistics pipeline, and (4) the naming convention. For the identifier ↔ manuscript-term lookup tables, see
 `NOMENCLATURE_CROSSWALK.md`.
 
 ---
@@ -31,25 +32,24 @@ action; no path appears anywhere else in the R codebase.
 | Variable | Points at |
 |---|---|
 | `path2code` | The folder where the code lies (i.e., this folder)
-| `path2data` | `Data/` — the merged cross-visit CSVs the analyses read |
+| `path2data` | `Data/Merged/` — the merged cross-visit CSVs the analyses read |
 | `path2sets` | `Data/` — per-visit CSVs written by `DatasetCreation_*` and the Python stage |
 | `path2root` | where `Results/` should be created (need not exist yet) |
 
-`config_paths.R` expands `~`, creates
-`path2root`, if absent, and **stops with a named error** if any input directory is
-missing. This way, a mistyped path fails immediately rather than halfway through a model
+`config_paths.R` expands `~`, tolerates a missing trailing slash, creates
+`path2root` if absent, and **stops with a named error** if any input directory is
+missing — so a mistyped path fails immediately rather than halfway through a model
 fit.
 
 Each script locates `config_paths.R` itself: it checks the working directory, the
-parent folder, and a `Code/` subfolder. If none of those work, for example when
-running with `Rscript` from an unrelated directory, set `CODE_FOLDER` on the
+parent folder, and a `Code/` subfolder. If none of those work — for example when
+running with `Rscript` from an unrelated directory — set `CODE_FOLDER` on the
 second line of the script, or `setwd()` to this folder. The script stops with a
-message naming both options and printing the directory it searched from. The easiest 
-way to avoid such an error is to download all the code and set it in the same folder 
-in which `AlphaBurstRhythm.Rproj` is located. This R project is a convenience function
-only. Double-clicking it makes RStudio set the working directory to the folder where it is located.
-Because all the code should ideally be in the same folder, this makes that the first requisite  
-automatically fulfilled. It has no other effect on the code. 
+message naming both options and printing the directory it searched from.
+
+`AlphaBurstRhythm.Rproj` is a convenience only: double-clicking it makes RStudio
+set the working directory here, so the first candidate resolves. It is not
+required and has no effect outside RStudio.
 
 Python and MATLAB have their own small config blocks at the top of the entry-point
 files (`CODE_DIR` / `SET_DIR` / `DATA_DIR`, and `Path2*` respectively). Set
@@ -60,9 +60,10 @@ output.
 
 Scripts are numbered for execution order; dataset creation must precede analysis.
 For data privacy, clean EEG sets after MADE preprocessing are not available in the repository, so the Python stage is not runnable. 
-This also limits running DatasetCreation_1a/b and DatasetCreation_2a/b, which require the Python output, and also limits running SupplementaryMethods_1. However, this doesn't mean these codes are not functional. Instead, our Python codes are easily adaptable. With very few modifications, our Python codes can process clean-epoched EEG data from EEGlab, generating single-child outputs with most of the metrics of interest.
-Then, if adapted in terms of structure, DatasetCreation_* can be easily implemented to compute definitive metrics of the study.
-The rest of the pipeline can be run with the anonymized merged CSVs in `Data/`.
+This also limits running DatasetCreation_1a/1b, which require the Python output and SupplementaryMethods_1. This doesn't mean these codes 
+are not functional. Instead, our Python codes and DatasetCreation scripts are easily adaptable. With very few modifications, our Python codes 
+can process clean-epoched EEG data from EEGlab, generating single-children outputs with most of the metrics of interest.
+The rest of the pipeline can be run with the merged CSVs in `Data/Merged/`.
 
 ```
 # --- Python feature extraction (§4a; run once per subject, before R) ---
@@ -85,14 +86,17 @@ DataAnalysis_0_Sample_and_Metrics_Descriptives.R
 DataAnalysis_1_WholeBraind_and_ROI_GAMM_Development.R
 DataAnalysis_2_BurstImpact_MLM_Models.R
 DataAnalysis_3_AlphaPeakPrediction_and_MLM_models.R
-DataAnalysis_4_AlphaPeakPrediction_and_MLM_models_voltamp.R   # S8 robustness check
+DataAnalysis_4_AlphaPeakPrediction_and_MLM_models_voltamp.R   # Extended Data Fig. 5 robustness check
 
 # --- Figures ---
 Figure_1_Code.R
 Figures_2_3_4_Code.R
 Figures_S3_S4_S5_topomaps_fieldtrip.m           # MATLAB; needs DatasetCreation_4 output
+                                                # (topomaps now numbered Fig S1a/b, S2, S3 in the SI;
+                                                #  consider renaming this file to match, e.g.
+                                                #  Figures_S1_S2_S3_topomaps_fieldtrip.m)
 
-# --- Supplementary methods/results ---
+# --- Supplementary methods / results ---
 SupplementaryMethods_1_ParametrizedPSD_RangeSelection.R
 SupplementaryMethods_2_ParametrizedPSD_FinalRange_Descriptives.R
 SupplementaryMethods_3_Lifespan_RangeSelection.R
@@ -111,74 +115,92 @@ other scripts write, so it must run after them. It never refits a model.
 
 ## 2. Output Folder Organization
 
-Everything is written under a single `Results/` root, split into `Figures/` and
-`Tables/` as the manuscript is organised. Sub-folders are derived from `path2root`
-and created on first run.
+Everything is written under a single `Results/` root, organised into three
+top-level tiers that mirror the manuscript — **`MainText/`**, **`ExtendedData/`**,
+and **`SupplementaryInformation/`** — each split into `Figures/` and `Tables/`.
+`SupplementaryInformation/` is further divided into `GeneralInformation/`,
+`Methods/` and `Results/` to match the structure of the Supplementary Information
+document. Sub-folders are derived from `path2root` and created on first run.
 
 ```
 Results/
-├── Figures/
-│   ├── MainText/              Fig 1, 2, 3, 4, 5
-│   ├── Supplementary/         Fig S1, S6, S7, S8  (+ topomap panels S3–S5)
-│   ├── SupplementaryMethods/  Fig SM1, SM2, SM4   (+ SM3 quality topomaps)
-│   └── SupplementaryResults/  Fig SR1, SR2
-└── Tables/
-    ├── Descriptives/          Table 2, S2, S3, S4 + ROI complementary descriptives
-    ├── MainText/
-    │   ├── Development/       Whole-brain GAMM development result tables
-    │   ├── BurstImpact/       Burst-impact MLM result tables
-    │   └── AlphaPrediction/   Peak-prediction + MLM-contribution tables
-    ├── Supplementary/         Table S1, S5, S7, S8 + complementary
-    ├── SupplementaryMethods/  Table SM1, S6, range-comparison tables
-    ├── SupplementaryResults/  ROI-stratified GAMM tables, adj-epoch tables
-    └── SupplementaryTables/   ★ Table_SR1.csv … Table_SM3.csv
-        └── Supplementary_Statistical_Tables.xlsx   ★ the submitted XLSX file with all the statistical details.
+├── MainText/
+│   ├── Figures/                    Fig 1, 2, 3, 4, 5
+│   └── Tables/
+│       ├── (Table 2a, 2b)          main-text sociodemographic tables
+│       ├── Development/            Whole-brain GAMM development result tables
+│       ├── BurstImpact/            Burst-impact MLM result tables
+│       └── AlphaPrediction/        Peak-prediction + MLM-contribution tables
+├── ExtendedData/
+│   ├── Figures/                    Extended Data Fig. 1, 3, 4, 5
+│   └── Tables/                     Extended Data Table 1, 2 (+ Fig. 5 robustness HTML)
+└── SupplementaryInformation/
+    ├── GeneralInformation/
+    │   ├── Figures/                (topomap panels: Fig. S1a/b, S2, S3 — from MATLAB)
+    │   └── Tables/                 Table S1, S2, S3, S4, S5, S6 + complementary descriptives
+    ├── Methods/
+    │   ├── Figures/                Fig SM1, SM2, SM4   (+ SM3 quality topomaps)
+    │   └── Tables/                 Table SM1, range-comparison tables
+    └── Results/
+        ├── Figures/                Fig SR1, SR2
+        └── Tables/
+            ├── (ROI-stratified GAMM tables, adj-epoch tables)
+            └── SupplementaryTables/   ★ Table_SR1.csv … Table_SM3.csv
+                └── Supplementary_Statistical_Tables.xlsx   ★ the submitted file
 ```
 
 ### Organization
 
-- **Descriptive tables live in `Tables/Descriptives/`** by *content*, even when the
-  manuscript numbers them with an "S" (Table S2, S3, S4). The exception is Table S6,
-  a parametrisation-quality descriptive discussed inside *Supplementary Methods*.
+- **The three tiers match the manuscript's own division.** Items promoted to
+  Extended Data (Fig. 1, 3, 4, 5; Table 1, 2) are filed under `ExtendedData/`,
+  separately from the Supplementary Information items, so the folder a file lands in
+  tells you which part of the submission it belongs to.
+- **Descriptive S-tables live in `SupplementaryInformation/GeneralInformation/Tables/`**
+  and now carry the Supplementary Information document's own numbering (Table S1–S6),
+  independent of the main-text and Extended Data numbering.
 - **Main-text result tables** split by analysis into `Development`, `BurstImpact`
-  and `AlphaPrediction`, matching the three Results sections. These mimic the result tables in
-  the XLSX file but are separated by analysis and formatted in HTML.
-- **`Tables/SupplementaryTables/`** holds the numbered statistical
-  tables that accompany the submission. The HTML tables elsewhere are
-  unchanged and remain the at-a-glance view. 
-- **`Tables/SupplementaryMethods or SupplementaryResults`** Besides the general statistics tables in 
-  the XLSX that are assembled. For readability, our code also generates HTML tables elsewhere with the 
-  same statistics. The HTML tables are unchanged and remain the at-a-glance view.
+  and `AlphaPrediction`, matching the three Results sections; the two main-text
+  sociodemographic tables (Table 2a, 2b) sit directly under `MainText/Tables/`.
+- **`SupplementaryInformation/Results/Tables/SupplementaryTables/`** holds the
+  numbered statistical tables that accompany the submission (the `.xlsx`). The HTML
+  tables elsewhere are unchanged and remain the at-a-glance view.
 - A script emitting more than one category writes to more than one sink and declares
-  extra path variables (`path2suppfig`), all derived from
-  `path2root`.
+  the tiered path variables it needs (`path2main_tab`, `path2ed_tab`, `path2ed_fig`,
+  `path2si_gi_tab`, and the existing `path2tabs` / `path2figs` / `path2suppres`),
+  all derived from `path2root`.
 
 ### Where each script writes
 
 | Script | Figures | Tables |
 |---|---|---|
-| `Figure_1_Code.R` | `Figures/MainText` (Fig 1) | — |
-| `Figures_2_3_4_Code.R` | `Figures/MainText` (Fig 2–4), `Figures/Supplementary` (Fig S6, S7) | — |
-| `Figures_S3_S4_S5_topomaps_fieldtrip.m` | `Figures/Supplementary` (Fig S3–S5; SM3 panels) | — |
-| `DataAnalysis_0_…Descriptives` | `Figures/Supplementary` (Fig S1) | `Tables/Descriptives`, `Tables/Supplementary` |
-| `DataAnalysis_1_…GAMM_Development` | `Figures/SupplementaryResults` (Fig SR1) | `Tables/MainText/Development`, `Tables/SupplementaryResults`, **SR1, SR2, SR7, SR8, SR12** |
-| `DataAnalysis_2_…BurstImpact_MLM` | `Figures/MainText` | `Tables/MainText/BurstImpact`, `Tables/Descriptives` (Table S4), **SR3, SR4** |
-| `DataAnalysis_3_…AlphaPeakPrediction` | `Figures/MainText` (Fig 5) | `Tables/MainText/AlphaPrediction`, **SR5, SR6** |
-| `DataAnalysis_4_…voltamp` (S8 robustness) | `Figures/Supplementary` (Fig S8) | `Tables/Supplementary`, **SR11** |
-| `SupplementaryMethods_1_…RangeSelection` | `Figures/SupplementaryMethods` (Fig SM1) | `Tables/SupplementaryMethods` |
-| `SupplementaryMethods_2_…FinalRange` | `Figures/SupplementaryMethods` (Fig SM2) | `Tables/SupplementaryMethods` (Table S6) |
-| `SupplementaryMethods_3_…Lifespan` | `Figures/SupplementaryMethods` (Fig SM4) | `Tables/SupplementaryMethods` (Table SM1), **SM2, SM3** |
-| `SupplementaryResuls_2_…adjEpoch` | `Figures/SupplementaryResults` (Fig SR2) | `Tables/SupplementaryResults`, **SR9, SR10** |
-| `SupplementaryData_BuildWorkbook.R` | — | `Tables/SupplementaryTables/` (assembles all of the above) |
+| `Figure_1_Code.R` | `MainText/Figures` (Fig 1) | — |
+| `Figures_2_3_4_Code.R` | `MainText/Figures` (Fig 2–4), `ExtendedData/Figures` (Extended Data Fig. 3, 4) | — |
+| `Figures_S3_S4_S5_topomaps_fieldtrip.m` † | `SupplementaryInformation/GeneralInformation/Figures` (Fig S1a/b, S2, S3; SM3 panels) | — |
+| `DataAnalysis_0_…Descriptives` | `ExtendedData/Figures` (Extended Data Fig. 1) | `MainText/Tables` (Table 2a, 2b), `ExtendedData/Tables` (Extended Data Table 1), `SupplementaryInformation/GeneralInformation/Tables` (Table S1, S2, S3, S5, S6) |
+| `DataAnalysis_1_…GAMM_Development` | `SupplementaryInformation/Results/Figures` (Fig SR1) | `MainText/Tables/Development`, `SupplementaryInformation/Results/Tables`, **SR1, SR2, SR7, SR8** |
+| `DataAnalysis_2_…BurstImpact_MLM` | `MainText/Figures` | `MainText/Tables/BurstImpact`, `ExtendedData/Tables` (Extended Data Table 2), **SR3, SR4** |
+| `DataAnalysis_3_…AlphaPeakPrediction` | `MainText/Figures` (Fig 5) | `MainText/Tables/AlphaPrediction`, **SR5, SR6** |
+| `DataAnalysis_4_…voltamp` (Extended Data Fig. 5 robustness) | `ExtendedData/Figures` (Extended Data Fig. 5) | `ExtendedData/Tables`, **SR11** |
+| `SupplementaryMethods_1_…RangeSelection` | `SupplementaryInformation/Methods/Figures` (Fig SM1) | `SupplementaryInformation/Methods/Tables` |
+| `SupplementaryMethods_2_…FinalRange` | `SupplementaryInformation/Methods/Figures` (Fig SM2) | `SupplementaryInformation/GeneralInformation/Tables` (Table S4) |
+| `SupplementaryMethods_3_…Lifespan` | `SupplementaryInformation/Methods/Figures` (Fig SM4) | `SupplementaryInformation/Methods/Tables` (Table SM1), **SM2, SM3** |
+| `SupplementaryResuls_2_…adjEpoch` | `SupplementaryInformation/Results/Figures` (Fig SR2) | `SupplementaryInformation/Results/Tables`, **SR9, SR10** |
+| `SupplementaryData_BuildWorkbook.R` | — | `SupplementaryInformation/Results/Tables/SupplementaryTables/` (assembles all of the above) |
 
-> **Note on the topomaps.** `Figures_S3_S4_S5_topomaps_fieldtrip.m` saves one JPEG
-> per metric into `Figures/Supplementary/`. The aperiodic/oscillatory, burst and
-> lifespan panels are Fig S3–S5; the R²/MAE quality panels belong to Fig SM3 — move
-> those two into `Figures/SupplementaryMethods/` when assembling the supplement.
+† The MATLAB topomap script still carries its old `S3_S4_S5` filename; its output
+panels are now the SI's Fig. S1a/b, S2 and S3. Rename the file if you want the
+filename to match the new numbering (it is not sourced by the R pipeline, so the
+name is cosmetic).
+
+> **Note on the topomaps.** The MATLAB topomap script saves one JPEG per metric into
+> `SupplementaryInformation/GeneralInformation/Figures/`. The aperiodic/oscillatory,
+> burst and lifespan panels are Fig. S1a/b, S2 and S3; the R²/MAE quality panels
+> belong to Fig. SM3 — move those into `SupplementaryInformation/Methods/Figures/`
+> when assembling the supplement.
 
 ---
 
-## 3. Auxiliary Code to Generate Supplementary Table Statistics
+## 3. Auxiliar Code to Generate Supplementary Table Statistics
 
 The model-output tables are too large to typeset in the manuscript, so they ship as
 a data file. Two files implement this; no analysis script needed restructuring.
@@ -192,8 +214,8 @@ a data file. Two files implement this; no analysis script needed restructuring.
 | `nn_lmer_df(model, term)` | Satterthwaite df for one `lmerTest` term; warns loudly if the model was fitted with `lme4::lmer` instead. |
 | `nn_save_table(ft, dir, stem)` | Saves a flextable as HTML and optionally Word in one call. |
 
-`NN_TABLE_INDEX` at the top of the file is the **single place** where table numbers,
-captions, and column groupings are declared. Renumbering is one edit there.
+`NN_TABLE_INDEX` at the top of the file is the **single place** table numbers,
+captions and column groupings are declared. Renumbering is one edit there.
 
 ### `SupplementaryData_BuildWorkbook.R` — run last
 
@@ -236,20 +258,27 @@ the reference df, and their parametric terms based on the residual df, which is 
 Two entry points turn raw EEG into the per-subject CSVs that `DatasetCreation_` 
 and `SupplementaryMethods_1_RangeSelection.R` use. They rest on two libraries that **cannot be imported**. 
 Therefore, never run directly because it will crash. Yet, these codes are functional, and with some adjustments
-can be run on other datasets.
+can be run in other datasets.
 
 | Module | Role |
 |---|---|
 | `convenience_functions_jrp.py` (imported as `jrpc`) | Shared toolkit: PSD estimation, lagged coherence, specparam trial selection, CSV writer. No `__main__`. |
 | `lagged_autocoherence.py` (imported as `la`) | LAcH reference implementation, adapted from Zhang et al. (2025), *Imaging Neuroscience*. Imported by `EEG_metrics_rest_NN.py`. |
-| `EEG_metrics_rest_NN.py` | **Data generated.** `aperosc_parameters*.csv`, `psds*.csv`, `burst_properties_bycycle.csv`, `lagged_coh_py_hilb*.csv`. Its output is used in `DatasetCreation_1a`, `2a`. |
-| `EEG_metrics_rest_NN_basedonbursts.py` | **Data generated.** Burst-conditioned `aperosc_parameters_burst*.csv`, `psds_burst*.csv`, `lagged_coh_py_hilb*_burst.csv`. Its output is used in `DatasetCreation_1b`. |
+| `EEG_metrics_rest_NN.py` | **Data generated.** `aperosc_parameters*.csv`, `psds*.csv`, `burst_properties_bycycle.csv`, `lagged_coh_py_hilb*.csv` → feeds `DatasetCreation_1a`, `2a`. |
+| `EEG_metrics_rest_NN_basedonbursts.py` | **Data generated.** Burst-conditioned `aperosc_parameters_burst*.csv`, `psds_burst*.csv`, `lagged_coh_py_hilb*_burst.csv` → feeds `DatasetCreation_1b`. |
+
+### `renaming.R` — legacy CSV migration (optional, one-off). It is a convenience tool 
+to rename columns across datasets.Only needed for CSVs produced *before* the naming standardisation; 
+it rewrites their column headers to the current convention. **Not** part of the normal run order.
+Defaults to `DRY_RUN <- TRUE` (reports, writes nothing), keeps a `.bak` per file, is
+idempotent, and hard-stops on ambiguity rather than corrupting a column. Run it dry
+first — it rewrites in place, recursively, over every CSV under `path2sets`.
 
 ---
 
 ## 5. Naming convention
 
-`NOMENCLATURE_CROSSWALK.md` contains all the information regarding the equivalence. Below you can find a summary of the equivalence of the column to the manuscript term.
+`NOMENCLATURE_CROSSWALK.md` is the lookup table.
 
 | Domain | Canonical | Rationale |
 |---|---|---|
