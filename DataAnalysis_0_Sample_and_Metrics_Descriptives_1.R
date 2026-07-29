@@ -38,12 +38,12 @@ epochs_threshold = EPOCHS_THRESHOLD  # Minimum clean epochs per electrode (5)
 # All output sub-folders below derive from it and mirror the manuscript's own
 # organisation (see README / Output folder taxonomy).
 #
-# path2data      : merged/analysis-ready input data (read-only here)
-# path2main_tab  : MainText/Tables/                         .../ Table 2a, 2b
-# path2ed_tab    : ExtendedData/Tables/                     .../ Extended Data Table 1
-# path2ed_fig    : ExtendedData/Figures/                    .../ Extended Data Fig. 1
-# path2si_gi_tab : SupplementaryInformation/GeneralInformation/Tables/
-#                                                           .../ Table S1, S2, S3, S5, S6 + complementary
+# path2data     : merged/analysis-ready input data (read-only here)
+# path2main_tab : MainText/Tables/                         .../ Table 2a, 2b
+# path2ed_tab   : ExtendedData/Tables/                     .../ Extended Data Table 1
+# path2ed_fig   : ExtendedData/Figures/                    .../ Extended Data Fig. 1
+# path2si_gi_tab: SupplementaryInformation/GeneralInformation/Tables/
+#                                                           .../ Table S1, S2, S3, S5, S6
 
 path2data = path2sets   # EDIT   # = Data/; this script prepends "" to each file name
 # path2root comes from config_paths.R
@@ -59,8 +59,8 @@ path2si_gi_tab = file.path(path2root, "SupplementaryInformation", "GeneralInform
 path2desc    = path2main_tab   # main-text Table 2 sink
 path2supptab = path2si_gi_tab  # SI general-information table sink
 path2suppfig = path2ed_fig     # this script's only figure (Extended Data Fig. 1)
-path2save = path2main_tab
-path2figs = path2ed_fig
+path2save    = path2main_tab
+path2figs    = path2ed_fig
 
 for (p in c(path2main_tab, path2ed_tab, path2ed_fig, path2si_gi_tab))
   if (!dir.exists(p)) dir.create(p, recursive = TRUE)
@@ -71,7 +71,7 @@ for (p in c(path2main_tab, path2ed_tab, path2ed_fig, path2si_gi_tab))
 
 # --- Electrode map ---
 # Expands short region codes to full names; retains only the 60 analysis channels.
-electrodes = read_csv(file.path(path2data, "electrodes.csv")) |> # EDIT the path
+electrodes = read_csv(file.path(path2data, "electrodes.csv")) |> 
   dplyr::select(label, region, hemis, chinclu) |>
   # Recode raw 2-letter region codes to full anatomical region names
   mutate(region = case_when(
@@ -81,16 +81,14 @@ electrodes = read_csv(file.path(path2data, "electrodes.csv")) |> # EDIT the path
     region == "O"  ~ "Occipital",
     TRUE         ~ "Central"
   )) |>
-  filter(chinclu == 1) |>
-  # Rename 'region' to 'region' for consistency across downstream operations
-  rename(region = region)
+  filter(chinclu == 1)
 
 # Variables of interest from the Specparam output file.
 aper_voi = c("sujid", "session_age", "ch", "region", "chinclu", "epochs",
              "r2value", "alpha_peak", "inclusion_final_dummy",
              "alpha_ampl", "alpha_osc", "alpha_freq", "slope", "offset", "mae", "goodch")
 
-# --- Aperiodic / oscillatory data ---
+# --- Aperiodic/oscillatory data ---
 # Filters: R² > threshold, MAE < threshold, included channel, minimum clean epochs,
 # at least 12 good channels per subject, and excluded subjects removed.
 aperiodic_data = read_csv(file.path(path2data, "Aperiodic_Oscillatory_ByCycle_Long.csv")) |>
@@ -108,8 +106,6 @@ aperiodic_data = read_csv(file.path(path2data, "Aperiodic_Oscillatory_ByCycle_Lo
     session_age = if_else(session_age == 15, 18, session_age),
     session_age = if_else(session_age == 40, 42, session_age)
   ) |>
-  # Rename 'region' to 'region' for consistency across datasets
-  rename(region = region) |>
   group_by(sujid, session_age, region) |>
   # Collapse electrode-level values to subject×visit×region level by averaging
   summarise(
@@ -204,14 +200,14 @@ desc_and_ages = read_csv(file.path(path2data, "Sociodemographic_Descriptives_Lon
 # --- Sociodemographic variables ----------------------------------------------
 # This release ships two files, and they cannot be joined to each other:
 #
-#   Sociodemographic_Descriptives_Long_Updated.csv   keyed by sujid
+#   Sociodemographic_Descriptives_Long_Updated.csv keyed by sujid
 #       visit structure and the analysis covariates - session_age, age_months,
 #       dev_filter, Cohort, GestationalAge_weeks, child_sex_dc.
 #
 #   Sociodemographic_SES_delinked.csv                keyed by demo_id
 #       one row per participant: Cohort plus the six sociodemographic variables
 #       (income-to-needs, family size, maternal education, race, ethnicity,
-#       sex). Row order is shuffled and no sujid is present, so these values
+#       sex). Row order is shuffled, and no sujid is present, so these values
 #       cannot be attributed to an individual EEG record.
 #
 SES_VARS = c("ITN_mean", "FamilySize_mean", "mother_education_mean",
@@ -222,7 +218,6 @@ if (!file.exists(ses_file))
   stop("Missing ", basename(ses_file), " in:\n  ", path2data,
        "\nIt ships alongside the other CSVs in the data download.", call. = FALSE)
 
-# One row per participant already; nothing to collapse.
 descriptives_sample_SES = readr::read_csv(ses_file, show_col_types = FALSE)
 
 missing_ses = setdiff(SES_VARS, names(descriptives_sample_SES))
@@ -239,8 +234,8 @@ cat(paste0("Participants with developmental disorders excluded: ",
            length(unique(desc_and_ages |> filter(dev_filter == 0) |> pull(sujid))), "\n"))
 
 desc_and_ages = desc_and_ages |>
-  # Inclusion criteria: dev_filter==1 (no developmental disorders), exclude pilot children (BUDDY001/006) and other children with no usable EEG data,
-  filter(dev_filter == 1, !sujid %in% c("BUDDY001", "BUDDY006"), sujid %in% suj_desc_eeg) |>
+  # Inclusion criteria: dev_filter==1 (no developmental disorders), exclude pilot children and other children with no usable EEG data,
+  filter(dev_filter == 1, !sujid %in% EXCLUDED_SUBJECTS, sujid %in% suj_desc_eeg) |>
   # Harmonize session_age labels; impute missing Cohort as 2 (Cohort 3 in final factor labels)
   mutate(
     session_age = if_else(session_age == 15, 18, session_age),
@@ -270,7 +265,7 @@ RACE_LABELS = c("White", "Black/African American", "Asian",
                 "American Indian/Alaska Native",
                 "Native Hawaiian/Pacific Islander", "Other", "Not Answer")
 
-# Analysis tier: sex (kept for Table S5 by visit) and Cohort.
+# Analysis tier: sex and Cohort for tables.
 desc_and_ages = desc_and_ages |>
   nn_recode("child_sex_dc", c(0,1), c("Male", "Female")) |>
   nn_recode("Cohort",       c(0,1,2), c("Cohort 1", "Cohort 2", "Cohort 3"))
@@ -289,7 +284,7 @@ desc_and_ages_wide = desc_and_ages |>
   filter(sujid %in% eeg_desc$sujid) |>
   mutate(across(any_of("ITN_mean"), ~ if_else(is.na(.x), mean(.x, na.rm = TRUE), .x)))
 
-# Combined descriptives frame: EEG preprocessing + sociodemographic data for descriptive Table
+# Combined descriptives frame: EEG preprocessing + sociodemographic data for descriptive tables.
 # Left-anchored on eeg_desc (preprocessing metrics and inclusion flags)
 descriptives = left_join(
   eeg_desc,
@@ -468,9 +463,8 @@ ses_variables = descriptives_sample_SES |> drop_na()
 
 # Full model: Cohort ~ all SES predictors.
 # Six predictors. The published model additionally included gestational age,
-# which is not in the de-linked file; its coefficients therefore differ slightly
-# from Table S1 in the paper. The published model is the seven-predictor one. This 
-# does not affect the results: Public x2(20) = 87.53, p < .0001, Manuscript χ2(22)= 93.720, P < 0.0001
+# which is not in the de-linked file. The coefficients between both analysis therefore differ slightly. 
+# However, this did not affect the results: Public x2(20) = 87.53, p < .0001, Manuscript χ2(22)= 93.720, P < 0.0001
 balance_model = VGAM::vglm(
   Cohort ~ ITN_mean + FamilySize_mean + mother_education_mean +
     child_race + child_ethnicity + child_sex_dc,
@@ -492,7 +486,7 @@ rtf::done(rtf_file)
 # SECTION 6: EEG PREPROCESSING DESCRIPTIVES
 # =============================================================================
 
-# --- Table S5: EEG preprocessing descriptives by visit ---
+# --- Table S3: EEG preprocessing descriptives by visit ---
 descriptives |>
   dplyr::select(session_age, child_sex_dc, age_months, total_bch, total_ics,
                 prop_epochs, clean_epochs_rest) |>
@@ -809,7 +803,7 @@ eeg_long |>
   flextable::font(fontname = "Arial", part = "all") |> fontsize(size = 10, part = "all") |>
   save_as_docx(path = file.path(path2si_gi_tab, "Table_S1_WholeBrain_Descriptives_by_visit.docx"))
 
-# --- Table: EEG descriptives by brain region (Mean (SD)) ---
+# --- Table S2A-D: EEG descriptives by brain region (Mean (SD)) ---
 aper_summ_reg  = aperiodic_data |>
   group_by(sujid, session_age, region) |>
   summarise(across(c(slope, offset, peak_prop, peak_ampl, osc_ampl, peak_freq),
@@ -893,7 +887,7 @@ for (t in c('powerspectrum', 'burst', 'lifespan')) {
     padding(padding = 1, part = "all") |>
     flextable::font(fontname = "Arial", part = "all") |> fontsize(size = 10, part = "all") |>
     set_header_labels(Variable = "Metric") |>
-    save_as_docx(path = file.path(path2si_gi_tab, paste0("Table_S2_ROIs_Descriptives_by_visit_", t, ".docx")))
+    save_as_docx(path = file.path(path2si_gi_tab, paste0("Table_S2A_E_ROIs_Descriptives_by_visit_", t, ".docx")))
 }
 
 # =============================================================================
@@ -966,7 +960,7 @@ hlcoh_burst = hlcoh_burst|>
   ) 
 
 
-# --- Table S8 ---
+# --- Table S6 ---
 
 hlcoh_pvals = hlcoh_burst|>
   # Aggregate to subject×visit×burst level for paired tests
