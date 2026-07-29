@@ -2,8 +2,6 @@
 #  CODE Notes
 # -----------------------------------------------------------------------------
 # MANUSCRIPT NOMENCLATURE - Table 1 term to columns
-#   These on-disk CSV column identifiers are intentionally NOT renamed to preserve
-#   pipeline integrity and reproducibility. Display labels map here to manuscript text.
 #
 #   DATA columns to DISPLAY LABELS (used in plot y-axis/legend labels):
 #     slope                   → "Slope" (Aperiodic slope)
@@ -40,8 +38,7 @@
 #   - Fig_5_Contributions_Burst_Rhythm_to_ParametrizedPSD.jpeg
 # Dependencies: 00_Setup_PackageInstallation.R, 01_Utils_ProcFunctions.R
 #   NOTE: proc_graph_ggplot2() and median_se() are defined in
-#   01_Utils_ProcFunctions.R and sourced from there. They are no longer
-#   defined locally in this script.
+#   01_Utils_ProcFunctions.R and sourced from there.
 # =============================================================================
 
 # ---------------------------------------------------------------------------
@@ -49,7 +46,7 @@
 # ---------------------------------------------------------------------------
 # config_paths.R is looked for in the working directory. If R was started
 # somewhere else, set CODE_FOLDER on the next line to this script's folder.
-CODE_FOLDER = ""          # e.g. "~/AlphaBurstRhythm/Code"  If you have open the code from the project, you don't need to modify this line. Otherwise, select where the code folder that contains the config_paths.R is
+CODE_FOLDER = ""          # e.g. "~/AlphaBurstRhythm/Code"  If you have opened the code from the project, you don't need to modify this line. Otherwise, select where the code folder that contains the config_paths.R is
 
 local({
   cand = c(if (nzchar(CODE_FOLDER)) file.path(path.expand(CODE_FOLDER), "config_paths.R"),
@@ -65,7 +62,6 @@ local({
 })
 
 source(file.path(path2code, "00_Setup_PackageInstallation.R"))
-
 source(file.path(path2code, "SupplementaryTables_Helper.R"))
 source(file.path(path2code, "01_Utils_ProcFunctions.R"))
 
@@ -73,7 +69,6 @@ source(file.path(path2code, "01_Utils_ProcFunctions.R"))
 # =============================================================================
 # SECTION 1: ANALYSIS PARAMETERS
 # =============================================================================
-
 r2_thresh        = R2_THRESH         # Minimum Specparam R-squared (0.900)
 mae_thresh       = MAE_THRESH        # Maximum Specparam MAE (0.10)
 epochs_threshold = EPOCHS_THRESHOLD  # Minimum clean epochs per electrode (5)
@@ -84,7 +79,6 @@ pred_model   = TRUE
 n_bootstraps = 1000  # Iterations for bootstrapped CIs and proc_iter classification
 
 set.seed(RANDOM_SEED)  # Reproducibility seed (42)
-
 
 # =============================================================================
 # SECTION 2: PATH DEFINITIONS
@@ -154,7 +148,7 @@ descriptives = left_join(
   left_join(desc_and_ages_wide) |>
   filter(!is.na(prop_epochs)) #Keep only participants with EEG data (prop_epochs is from the EEG descriptive information)
 
-# --- Aperiodic / oscillatory data ---
+# --- Aperiodic/oscillatory data ---
 # 'mae' = Specparam mean absolute error (MAE). goodch (R2 > .900, MAE < .10)
 aper_voi = c("mae", "sujid", "session_age", "ch", "region", "chinclu", "epochs",
               "r2value", "alpha_peak", "inclusion_final_dummy",
@@ -207,7 +201,7 @@ burst_data = read_csv(file.path(path2data, "BurstProperties_ByCycle_Long.csv")) 
   ) |>
   ungroup() |>
   dplyr::select(-any_of(c('avg_burst_duration_NoBurst', 'prop_bursty_epochs_NoBurst'))) |>
-  # Rename Burst-specific columns to remove "_Burst" suffix for clean reference in models
+  # Rename Burst-specific columns to remove "_Burst" suffix for clean reference in models as these are the same across variables.
   rename(
     avg_burst_duration  = avg_burst_duration_Burst,
     prop_bursty_epochs = prop_bursty_epochs_Burst
@@ -225,7 +219,6 @@ voi = c("alpha_LAcH", "prop_bursty_epochs", "avg_burst_duration", "band_amp_corr
 
 # Age-1 data (primary prediction target: alpha peak presence at 1 month)
 data_plot_age1 = data_merged |> filter(session_age == 1)
-
 
 # =============================================================================
 # SECTION 4: EXPLORATORY PLOT (Burst Metrics by Alpha Peak Status at 1 Month)
@@ -263,7 +256,6 @@ plot50 = data_plot_age1 |>
   theme(legend.position = c(0.85, 0.85),
         axis.title.x    = element_blank())
 
-
 # =============================================================================
 # SECTION 5: GLMER CLASSIFICATION (pred_model = TRUE branch)
 # =============================================================================
@@ -279,7 +271,7 @@ if (pred_model) {
                   r2value, prop_epochs, age_months, GestationalAge_weeks) |>
     mutate(across(all_of(c(voi, "r2value", "prop_epochs", "age_months")),
                   ~ scale(.x)[, 1])) |>
-    drop_na(alpha_peak) # We need to standarize the rest of covariates. We control by age at 1 month because how fast EEG develops in this period. 
+    drop_na(alpha_peak) # We need to standardize the rest of the covariates. 
 
   model_alpha_peak = proc_iter(
     dataset   = data_model,
@@ -366,7 +358,7 @@ if (pred_model) {
     nn_supp_table(id = "SR5", note = paste(
       "Logistic mixed model classifying the presence of an alpha peak per electrode",
       "at the 1-month visit: Alpha peak (0/1) ~ Corrected band amplitude + Prop.",
-      "epochs with burst + Burst duration + Alpha lifespan + covariates + (1|child).",
+      "epochs with burst + Burst duration + Alpha lifespan + covariates + ).",
       "Values summarise 1,000 bootstrap iterations (80/20 train/test split with equal",
       "condition sampling). A predictor was considered reliable when its bootstrap",
       "95% CI excluded zero. This is a Wald z test, so no degrees of freedom apply."))
@@ -425,7 +417,7 @@ if (pred_model) {
       fixed_formula = as.formula(paste(
         f, "~ band_amp_corrected + avg_burst_duration + prop_bursty_epochs +
              alpha_LAcH + region + r2value + prop_epochs + age_months +
-             GestationalAge_weeks + (1|sujid)"
+             GestationalAge_weeks + )"
       ))
 
       m = tryCatch(lmerTest::lmer(fixed_formula, data = age_data),
@@ -443,8 +435,7 @@ if (pred_model) {
 
         # ---------------------------------------------------------------
         # Satterthwaite denominator degrees of freedom (lmerTest).
-        # Pulled straight from coef(summary(m)). For an `lmerModLmerTest` object the
-        # summary coefficient matrix is guaranteed to carry the columns
+        # Pulled straight from coef(summary(m)).
         # Estimate | Std. Error | df | t value | Pr(>|t|).
         # ---------------------------------------------------------------
         coef_tab = as.data.frame(coef(summary(m)))
@@ -523,8 +514,6 @@ if (pred_model) {
   # Export LMM results per dependent variable with recoded predictor names
   supp_rows = list()   # accumulates the numbered supplementary table
 
-  # NOTE: iterate over UNIQUE dependent variables. Looping over the raw column
-  # re-wrote each of the three files once per row of results_df.
   for (d in unique(results_df$Dependent_Var)) {
 
     tbl_data = results_df |>
@@ -546,8 +535,6 @@ if (pred_model) {
       arrange(session_age) |>
       mutate(session_age = paste(session_age, 'mo.'))
 
-    # Numbered supplementary table: one file for all three dependent variables,
-    # accumulated across loop iterations then written on the last pass.
     supp_rows[[as.character(d)]] = tbl_data |> mutate(`Dependent variable` = as.character(d))
 
     flextable(tbl_data) |>
@@ -576,7 +563,7 @@ if (pred_model) {
       theme_booktabs() |> autofit() |>
       add_footer_lines(paste0(
         "Model:", d,  " ~  Corrected Band Amplitude + Burst Duration + Prop. of Epoch w/ Burst + Alpha Lifespan + 
-        Region + Parametrization Model Fit  + Prop. of Epoch + Age at Visit (months) + Gestational Age (weeks) + (1|sujid). ",
+        Region + Parametrization Model Fit  + Prop. of Epoch + Age at Visit (months) + Gestational Age (weeks) + (1|child). ",
         "Degrees of freedom from Satterthwaite's approximation (lmerTest). ",
         "FDR correction (Benjamini-Hochberg) applied within each visit, across predictors and dependent variables. ",
         "95% CIs from parametric bootstrapping (", n_bootstraps, " iterations). ",
