@@ -2,8 +2,6 @@
 # ALPHA BURST DEVELOPMENT PROJECT
 # ----------------------------------------------------------------------------
 # MANUSCRIPT NOMENCLATURE - Table 1 term to columns
-#   These on-disk CSV column identifiers are intentionally NOT renamed to preserve
-#   pipeline integrity and reproducibility. Display labels map here to manuscript text.
 #
 #   DATA CONTRACT columns to DISPLAY LABELS (used in plot y-axis/legend labels):
 #     slope                   → "Slope" (Aperiodic slope)
@@ -18,7 +16,7 @@
 #          EEG quality thresholds, defines individualized alpha frequency bands,
 #          computes oscillatory band power from PSDs, and saves long-format
 #          datasets (parameters + PSDs) per age group. These visit-stratified 
-#          datasets are used in the mergin code to generate the final datasets (as well as topomaps data)
+#          datasets are used in the merging code to generate the final datasets (as well as topomaps data). 
 # =============================================================================
 # Inputs:
 #   - Data/Aperiodic/AgeNN/aperosc_parameters_*.csv   (per subject, per age)
@@ -26,7 +24,7 @@
 #   - electrodes.csv                                  (electrode map)
 # Outputs:
 #   - Data/aperiodic_oscillatory_long_allchannels_NNmo.csv  (one per age)
-#   - Data/psds_aperosc_long_region_NNmo.csv                  (one per age)
+#   - Data/psds_aperosc_long_region_NNmo.csv                (one per age)
 #   - Data/psds_aperosc_long_avg_NNmo.csv                   (one per age)
 # Dependencies: 00_Setup_PackageInstallation.R
 # =============================================================================
@@ -53,7 +51,6 @@ local({
 
 source(file.path(path2code, "00_Setup_PackageInstallation.R"))
 
-
 # =============================================================================
 # SECTION 1: ANALYSIS PARAMETERS
 # =============================================================================
@@ -66,17 +63,17 @@ mae_thresh       = MAE_THRESH        # Maximum Specparam MAE (0.10)
 epochs_threshold = EPOCHS_THRESHOLD  # Minimum clean epochs per electrode (5)
 ch_threshold     = 0                 # Min. fraction of channels meeting inclusion
                                      # criteria (0 = retain all; track via goodch in next steps). 
-                                     # This does not mean the criteria is no applied. Instead, it is filtered afterwards. 
+                                     # This does not mean the criteria are not applied. Instead, it is filtered afterwards. 
 
 # Specparam fitting settings
-fiindx  = 15          # Specparam maximum frequency index: 15 Hz (optimal). See Supplementary Methods of the paper. 
+fiindx  = 15          # Specparam maximum frequency index: 15 Hz. See Supplementary Methods of the paper. 
 fitmode = "no_prefit" # Specparam fitting mode used for this dataset. 
 
 # Age-group-specific alpha band limits (Hz).
 # Younger infants have slower alpha peaks; the window shifts upward with age.
 # These defaults apply only when no individual peak frequency is available.
-# visits 1  mo:  3–7 Hz
-# visits 6  mo:  5–8 Hz
+# visits 1  mo:    3–7 Hz
+# visits 6  mo:    5–8 Hz
 # visits 12–18 mo: 6–9 Hz
 # visits 30+ mo:   7–10 Hz
 
@@ -86,14 +83,14 @@ visits = STUDY_VISITS  # All session visits (months) to process
 # SECTION 2: PATH DEFINITIONS
 # =============================================================================
 # IMPORTANT: Update path2sets and path2data to match your local directory.
-# path2sets : root folder for per-age Specparam output files (subfolders: Age1, Age6, …)
-# path2data : destination folder for the merged CSV outputs
+# path2sets: root folder for per-age Specparam output files (subfolders: Age1, Age6, …)
+# path2data: destination folder for the merged CSV outputs
 
-# path2sets comes from config_paths.R   # <<< CHECK: set this to the folder holding the per-visit input CSVs (see config_paths.R: path2sets)
-path2data = path2sets           # EDIT: destination for output CSVs   # = Data/; this script prepends "" to each file name
+# path2data = "" Uncomment and add the path if a different path than those of config_paths.R is needed. 
+# path2sets = ""
 
 # Electrode map: links channel labels to brain region and inclusion flag.
-# chinclu == 1 marks the 60 pre-selected analysis channels.
+# chinclu == 1 marks the 60 pre-selected analysis channels for consistency with other large studies. 
 # region short codes (Fr, P, T, O) are expanded here for readability throughout the project.
 electrodes = read.csv(file.path(path2data, "electrodes.csv")) |>
   dplyr::select(label, region, hemis, chinclu) |>
@@ -118,8 +115,7 @@ for (visit in visits) {
           else if (visit < 30)        c(6, 9)
           else                        c(7, 10)
 
-  # Remap session label 40 to 42 months to match the age of the visit (42 mo) and avoid confusion.
-  # All other visits stay the same.
+  # Remap session label 40 to 42 months
   session_age = if (visit != 40) visit else 42
 
   # --- 3b. Load Specparam parameter and PSD files for this age ---
@@ -151,9 +147,8 @@ for (visit in visits) {
   )
 
   # --- 3c. Compute per-subject channel-quality inclusion flags ---
-  # goodch : number of channels passing both R² and MAE thresholds
-  # ch_prop : proportion of included channels that pass both thresholds
-  # (Restricted to pre-selected electrode set: chinclu == 1)
+  # goodch: number of channels passing both R² and MAE thresholds
+  # ch_prop: proportion of included channels that pass both thresholds
 
   inclusion_fit = pow_and_aper |>
     filter(chinclu == 1) |>
@@ -164,7 +159,7 @@ for (visit in visits) {
     )
 
   # Electrode-level flags:
-  #   inclusion_electrode_epochs : enough clean epochs
+  #   inclusion_electrode_epochs: enough clean epochs
   #   inclusion_electrode_rsq    : R² above threshold & MAE
   #   inclusion_combined         : passes BOTH R² and epoch count
   inclusion_fit = inclusion_fit |>
