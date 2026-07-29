@@ -137,7 +137,7 @@ Results/
 └── SupplementaryInformation/
     ├── GeneralInformation/
     │   ├── Figures/                (topomap panels: Fig. S1a/b, S2, S3 — from MATLAB)
-    │   └── Tables/                 Table S1, S2, S3, S4, S5, S6 + complementary descriptives
+    │   └── Tables/                 Table S1, S2, S3, S4, S5, S6 + complementary 
     ├── Methods/
     │   ├── Figures/                Fig SM1, SM2, SM4   (+ SM3 quality topomaps)
     │   └── Tables/                 Table SM1, range-comparison tables
@@ -146,7 +146,8 @@ Results/
         └── Tables/
             ├── (ROI-stratified GAMM tables, adj-epoch tables)
             └── SupplementaryTables/   ★ Table_SR1.csv … Table_SM3.csv
-                └── Supplementary_Statistical_Tables.xlsx   ★ the submitted file
+    └── StatisticalTables/
+            └── Supplementary_Statistical_Tables.xlsx   ★ the submitted file
 ```
 
 ### Organization
