@@ -701,7 +701,7 @@ if (length(emmeans_list) > 0) {
     add_footer_lines(paste0(
       "Visit stratified follow-up models fitted only for metrics with a significant Burst \u00d7 Age interaction ",
       "(FDR-corrected p < .05). Model: Metric ~ Burst + Prop. of Epochs Retained + Cohort + ",
-      "Gestational Age (weeks) [+ Parametrization Model Fit] + (1|sujid), averaged across brain. ",
+      "Gestational Age (weeks) [+ Parametrization Model Fit] + (1|child), averaged across brain. ",
       "FDR correction (Benjamini-Hochberg) applied within each metric across all visits. ",
       "95% CIs from parametric bootstrapping (", n_bootstraps, " iterations). ",
       "*p < .05; **p < .01; ***p < .001."
