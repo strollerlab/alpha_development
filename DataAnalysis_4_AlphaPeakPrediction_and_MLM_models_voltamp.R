@@ -2,8 +2,6 @@
 # CODE Notes
 # -----------------------------------------------------------------------------
 # MANUSCRIPT NOMENCLATURE - Table 1 term to columns
-#   These on-disk CSV column identifiers are intentionally NOT renamed to preserve
-#   pipeline integrity and reproducibility. Display labels map here to manuscript text.
 #
 #   DATA columns to DISPLAY LABELS (used in plot y-axis/legend labels):
 #     slope                   → "Slope" (Aperiodic slope)
@@ -25,7 +23,7 @@
 #          presence at 1 month from burst metrics (corrected band power).
 #          Section 1: GLMER classification (proc_iter; 1000 iterations)
 #          Section 2: LMM extraction (heatmap of beta estimates by visit)
-# This code aims to examine if chaning peak-to-peak voltage vs. band amp. in cycle-by-cycle toolbox change the results. 
+# This code aims to examine if changing peak-to-peak voltage vs. band amp. in the cycle-by-cycle toolbox varies the results. 
 # =============================================================================
 # Inputs:
 #   - Data/Aperiodic_Oscillatory_ByCycle_Long.csv
@@ -66,7 +64,6 @@ local({
 })
 
 source(file.path(path2code, "00_Setup_PackageInstallation.R"))
-
 source(file.path(path2code, "SupplementaryTables_Helper.R"))
 source(file.path(path2code, "01_Utils_ProcFunctions.R"))
 
@@ -85,7 +82,6 @@ pred_model   = TRUE
 n_bootstraps = 1000  # Iterations for bootstrapped CIs and proc_iter classification
 
 set.seed(RANDOM_SEED)  # Reproducibility seed (42)
-
 
 # =============================================================================
 # SECTION 2: PATH DEFINITIONS
@@ -149,9 +145,7 @@ descriptives = left_join(
   left_join(desc_and_ages_wide) |>
   filter(!is.na(prop_epochs))
 
-# --- Aperiodic / oscillatory data ---
-# 'mae' = Specparam fit error. specparam's compute_error() defaults to
-# error_metric='mae' (mean ABSOLUTE error) and is never overridden -> MAE.
+# --- Aperiodic/oscillatory data ---
 aper_voi = c("mae", "sujid", "session_age", "ch", "region", "chinclu", "epochs",
              "r2value", "alpha_peak", "inclusion_final_dummy",
              "alpha_ampl", "alpha_osc", "alpha_freq", "goodch")
@@ -187,9 +181,6 @@ burst_data = read_csv(file.path(path2data, "BurstProperties_ByCycle_Long.csv")) 
     session_age = if_else(session_age == 15, 18, session_age),
     session_age = if_else(session_age == 40, 42, session_age)
   ) |>
-  # Remove pre-computed correction columns; will recalculate from pivoted raw burst/non-burst values
-  dplyr::select(-c(band_amp_corrected, volt_amp_corrected, rise_decay_asym, peak_trough_asym)) |>
-  # Aggregate per-cycle metrics to per-channel means (electrode level), grouped by burst status
   group_by(sujid, session_age, ch, region, is_burst) |>
   summarise(across(where(is.numeric), ~ mean(.x, na.rm = TRUE)), .groups = "drop") |>
   # Wide format: separate columns for Burst vs. NoBurst values, enables ratio calculation
@@ -205,7 +196,7 @@ burst_data = read_csv(file.path(path2data, "BurstProperties_ByCycle_Long.csv")) 
     volt_amp_corrected = volt_amp_Burst / volt_amp_NoBurst
   ) |>
   ungroup() |>
-  # Drop NoBurst-specific aggregates; keep only Burst-specific metrics and ratios
+  # Drop NoBurst-specific because these were redundant. 
   dplyr::select(-any_of(c('avg_burst_duration_NoBurst', 'prop_bursty_epochs_NoBurst'))) |>
   # Rename Burst-specific columns to remove "_Burst" suffix for clean reference in models
   rename(
@@ -237,7 +228,7 @@ plot_ed_fig5a3 = data_plot_age1 |>
     names_to  = "variable",
     values_to = "value"
   ) |>
-  # Z-score within electrode to control for topographical variance and enable cross-variable comparison
+  # Z-score within electrode to control for topographical variance
   mutate(value = scale(value)[, 1], .by = c(variable, ch)) |>
   # Recode variable names to publication-ready labels
   mutate(variable = factor(variable,
@@ -344,7 +335,7 @@ if (pred_model) {
     padding(padding = 1, part = "all") |>
     flextable::font(fontname = "Arial", part = "all") |> fontsize(size = 10, part = "all") |>
     align(i = 1, part = "header", align = "center") |> 
-    save_as_html(path = file.path(path2save, "Complementary_FigS8_Alpha_Peak_Classification_corrected_voltage_check.html"))
+    save_as_html(path = file.path(path2save, "Complementary_Extended_Data_Fig_5_Alpha_Peak_Classification_corrected_voltage_check.html"))
   
   # Recode and rename model estimates for table export
   alpha_estimates = model_alpha_peak$results |>
@@ -420,8 +411,7 @@ for (age in unique(data_merged_region$session_age)) {
       
       # -----------------------------------------------------------------
       # Satterthwaite denominator degrees of freedom (lmerTest).
-      # Pulled straight from coef(summary(m)). For an `lmerModLmerTest` object the
-      # summary coefficient matrix is guaranteed to carry the columns
+      # Pulled straight from coef(summary(m)). 
       # Estimate | Std. Error | df | t value | Pr(>|t|).
       # -----------------------------------------------------------------
       coef_tab = as.data.frame(coef(summary(m)))
@@ -497,9 +487,6 @@ heatmat_fig_ed_5= ggplot(results_df, aes(x = factor(session_age), y = term_clean
 
   # Export LMM results per dependent variable with recoded predictor names
   supp_rows = list()   # accumulates the numbered supplementary table
-
-  # NOTE: iterate over UNIQUE dependent variables. Looping over the raw column
-  # re-wrote each of the three files once per row of results_df.
   for (d in unique(results_df$Dependent_Var)) {
 
     tbl_data = results_df |>
@@ -521,8 +508,6 @@ heatmat_fig_ed_5= ggplot(results_df, aes(x = factor(session_age), y = term_clean
       arrange(session_age) |>
       mutate(session_age = paste(session_age, 'mo.'))
 
-    # Numbered supplementary table: one file for all three dependent variables,
-    # accumulated across loop iterations then written on the last pass.
     supp_rows[[as.character(d)]] = tbl_data |> mutate(`Dependent variable` = as.character(d))
 
     flextable(tbl_data) |>
@@ -551,7 +536,7 @@ heatmat_fig_ed_5= ggplot(results_df, aes(x = factor(session_age), y = term_clean
       theme_booktabs() |> autofit() |>
       add_footer_lines(paste0(
         "Model:", d,  " ~  Corrected Voltage Amplitude + Burst Duration + Proportion of Epochs w/ burst + Alpha Lifespan + 
-        Region + Parametrization Model Fit  + Prop. of Epochs + Age at Visit (months) + Gestational Age (weeks) + (1|sujid). ",
+        Region + Parametrization Model Fit  + Prop. of Epochs + Age at Visit (months) + Gestational Age (weeks) + (1|child). ",
         "Degrees of freedom from Satterthwaite's approximation (lmerTest). ",
         "FDR correction (Benjamini-Hochberg) applied within each visit, across predictors and dependent variables. ",
         "95% CIs from parametric bootstrapping (", n_bootstraps, " iterations). ",
@@ -567,7 +552,7 @@ heatmat_fig_ed_5= ggplot(results_df, aes(x = factor(session_age), y = term_clean
       padding(padding = 1, part = "all") |>
       flextable::font(fontname = "Arial", part = "all") |> fontsize(size = 10, part = "all") |>
       align(i = 1, part = "header", align = "center") |> # Centers the new grouped headers
-      save_as_html(path = file.path(path2save, paste0("Complementary_FigS8_Contributions_Burst_Rhythm_to_ParametrizedPSD_", d, "_corrected_voltage_check.html")))
+      save_as_html(path = file.path(path2save, paste0("Complementary_Expanded_Data_Fig_5_Contributions_Burst_Rhythm_to_ParametrizedPSD_", d, "_corrected_voltage_check.html")))
 }
 
   bind_rows(supp_rows) |>
@@ -594,7 +579,6 @@ heatmat_fig_ed_5= ggplot(results_df, aes(x = factor(session_age), y = term_clean
         "Satterthwaite's approximation. 95% CIs from parametric bootstrapping ",
         "(1,000 iterations). P values FDR-corrected (Benjamini-Hochberg) within visit ",
         "across predictors and dependent variables."))
-
 
 
 # Combine classification and LMM panels
