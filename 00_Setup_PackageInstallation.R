@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # PATHS: edit config_paths.R once; nothing in this file needs changing.
 # ---------------------------------------------------------------------------
-# config_paths.R is looked for in the working directory. If R was started
+# config_paths.R is searched for in the working directory. If R was started
 # somewhere else, set CODE_FOLDER on the next line to this script's folder.
 CODE_FOLDER = ""          # e.g. "~/AlphaBurstRhythm/Code"  (leave "" if unsure)
 
@@ -25,9 +25,9 @@ local({
 #          Defines ALL shared global constants (thresholds, colours, themes)
 #          that every other script sources by calling:
 #              source("00_Setup_PackageInstallation.R")
-#          You don't need to run the script per-se. It is called every time in the other code. 
+#          You don't need to run the script per se. It is called every time in the other code. 
 # =============================================================================
-# Outputs: None (side-effects: NA
+# Outputs: None
 # =============================================================================
 
 
@@ -61,7 +61,7 @@ required_packages = c(
   # --- Mixed Models & Statistics ---
   "lme4",         # MLM models
   "lmerTest",     # p-values for lme4 via Satterthwaite approximation in lme4
-  "nlme",         # Linear / nonlinear mixed-effects models used in GAMMs
+  "nlme",         # Linear/nonlinear mixed-effects models used in GAMMs
   "mgcv",         # GAMMs
   "gratia",       # Tidy tools for GAM/GAMM
   "AICcmodavg",   # AICc-based model comparison and selection
@@ -97,7 +97,8 @@ required_packages = c(
 # SECTION 2: INSTALLATION
 # =============================================================================
 
-# Identify which packages are already installed; compute those still needing installation
+# Identify which packages are already installed while keeping those still needing installation 
+# for the next step.
 already_installed   = installed.packages()[, "Package"]
 packages_to_install = setdiff(required_packages, already_installed)
 
@@ -166,7 +167,7 @@ if (n_failed == 0) {
 cat(strrep("=", 65), "\n\n")
 
 # =============================================================================
-# SECTION 4: SESSION INFO (for Reproducibility)
+# SECTION 4: SESSION INFO
 # =============================================================================
 
 cat("Session Information (for reproducibility):\n")
@@ -182,7 +183,7 @@ cat(strrep("-", 65), "\n\n")
 # =============================================================================
 # These global parameters are used identically across ALL SCRIPTS.
 # Sourcing this file into other scripts ensures uniform parameter values.
-# Do NOT redefine these in individual scripts, INSTEAD MODIFY THEM HERE IF YOU WAN TO MODIFY THE PARAMETERS. 
+# Do NOT redefine these in individual scripts. INSTEAD MODIFY THEM HERE IF YOU WANT TO CHANGE THE PARAMETERS. 
 
 # ---------------------------------------------------------------------------
 # 5a. EEG Quality Thresholds
@@ -197,15 +198,10 @@ MAE_THRESH       = 0.10   # Maximum acceptable Specparam model MAE (Mean Absolut
 CH_THRESHOLD     = 12     # Minimum number of good electrodes for subject inclusion
 
 # ---------------------------------------------------------------------------
-# 5b. Study Ages and Session-Age Remapping
+# 5b. Study Visits (in months). Note: 15 to 18 are called 18 in the manuscript.
 # ---------------------------------------------------------------------------
 # All visit ages (in months) present in the study.
 STUDY_VISITS = c(1, 6, 12, 15, 18, 30, 36, 40, 48)
-
-# Session-label → analysis-label remapping.
-# The fourth visit (15 to 18) was collected in two time-points. For easiness we will refer to it as 18 months, but in the raw data it can appear either as 15 or 18 months depending on the visit took place. 
-#The same applies to the last visit, which was collected at 40 to 44 months but labelled as 40 months in the raw data. 
-VISIT_AGE_REMAP = list(`15` = 18, `40` = 42)
 
 # ---------------------------------------------------------------------------
 # 5c. Participants to Exclude
@@ -221,13 +217,13 @@ RANDOM_SEED = 42  # Used for all bootstrap / random-sampling operations
 # ---------------------------------------------------------------------------
 # 5e. Colour Palettes
 # ---------------------------------------------------------------------------
-# COLORS_MAIN       : Two-colour palette (blue and burgundy) for primary comparisons (e.g., burst vs. non-burst containing epochs)
-# COLORS_GRADIENT   : 8-colour gradient for age-group panels
-# COLORS_NATURE     : Three-colour palette for derivative significance maps
+# COLORS_MAIN      : Two-colour palette (blue and burgundy) for primary comparisons (e.g., burst vs. non-burst containing epochs)
+# COLORS_GRADIENT  : 8-colour gradient for visit-group panels
+# COLORS_NATURE    : Three-colour palette for derivative significance maps
 #                     (Increase = purple, Decrease = orange, No Change = grey)
 # COLORS_NATURE_BURST : Same concept but for burst × no-burst interaction models
 #                     (Diverging (+) / Diverging (-) / Parallel) - It is equal to the above
-# COLORS_COHORT     : Three-colour palette for cohort-level plots 
+# COLORS_COHORT    : Three-colour palette for cohort-level plots 
 
 COLORS_MAIN    = c("#7A1B61", "#A9E0EE")  
 
@@ -262,9 +258,9 @@ COLORS_COHORT = c("brown", "#7687AB", "lightblue")  # Cohorts 1, 2, 3 (Respectiv
 # ---------------------------------------------------------------------------
 # 5f. Standard ggplot2 Themes
 # ---------------------------------------------------------------------------
-# THEME_BASE         : Publication theme for all x–y trajectory / bar plots
-# THEME_TEXT         : Axis-text sizes that supplement THEME_BASE
-# THEME_COMPACT      : Compact theme for MLM / classification heatmaps plots
+# THEME_BASE        : Publication theme for all x–y trajectory / bar plots
+# THEME_TEXT        : Axis-text sizes that supplement THEME_BASE
+# THEME_COMPACT     : Compact theme for MLM / classification heatmap plots
 # THEME_TEXT_COMPACT : Axis-text sizes (with 45° x-axis labels) for THEME_COMPACT
 
 THEME_BASE = ggpubr::theme_pubr() +
@@ -339,6 +335,7 @@ THEME_TEXT_COMPACT = theme(
 )
 
 
+# 95% CI function to use with gtsummary and create the confidence intervals. 
 p2.5  <- function(x) quantile(x, probs = 0.025, na.rm = TRUE)
 p97.5 <- function(x) quantile(x, probs = 0.975, na.rm = TRUE)
 
