@@ -2,26 +2,23 @@
 #  CODE Notes
 # -----------------------------------------------------------------------------
 # MANUSCRIPT NOMENCLATURE - Table 1 term
-#   Column identifiers below are an on-disk CSV / cross-script DATA CONTRACT and
-#   are intentionally NOT renamed (would break the pipeline + OSF data). Display
-#   labels and this map carry the manuscript terminology.
 #     slope                   -> Aperiodic slope
 #     offset                  -> Aperiodic offset
 #     peak_freq               -> Alpha Peak Frequency
 #     peak_ampl               -> Alpha Peak Amplitude
-#     peak_prop                -> Alpha Peak Proportion
+#     peak_prop               -> Alpha Peak Proportion
 #     osc_ampl                -> Oscillatory Alpha Band Power
 #     alpha_LAcH              -> Alpha lifespan (Lagged Auto coherence Hilbert - cycle in which cumulative sum == 90% of the total)
 # -----------------------------------------------------------------------------
 # Script: DataAnalysis_2_BurstImpact_MLM_Models.R
-# Purpose: Tests whether EEG metrics differ between burst and non-burst cycle
+# Purpose: Tests whether EEG metrics differ between burst and non-burst cycles
 #          epochs across development using Linear Mixed-Effects Models (LMER).
 #
 #          For each metric (aperiodic slope/offset, oscillatory amplitude/
 #          frequency/percentage, alpha lifespan), fits:
 #
 #            pow ~ burst * factor(session_age) + prop_epochs + Cohort +
-#                  GestationalAge_weeks +  [+ model_fit] + (1|sujid)
+#                  GestationalAge_weeks + [+ model_fit if specparam] + (1|sujid)
 # =============================================================================
 # Inputs:
 #   - Data/Aperiodic_Oscillatory_ByCycle_Long_Burst.csv
@@ -30,8 +27,8 @@
 #   - Data/Sociodemographic_Descriptives_Long_Updated.csv
 #   - Scripts/electrodes.csv
 # Outputs (to path2tabs):
-#  - Complementary_Fig4_Table_MLM_BurstImpact_by_Visit.html
-#  - Complementary_Fig4_Table_MLM_BurstImpact_by_Visit_**variable**.html
+#  - Complementary_Fig_4_Table_MLM_BurstImpact_by_Visit.html
+#  - Complementary_Fig_4_Table_MLM_BurstImpact_by_Visit_**variable**.html
 # Dependencies: 00_Setup_PackageInstallation.R
 # =============================================================================
 
@@ -40,7 +37,7 @@
 # ---------------------------------------------------------------------------
 # config_paths.R is looked for in the working directory. If R was started
 # somewhere else, set CODE_FOLDER on the next line to this script's folder.
-CODE_FOLDER = ""          # e.g. "~/AlphaBurstRhythm/Code"  If you have open the code from the project, you don't need to modify this line. Otherwise, select where the code folder that contains the config_paths.R is
+CODE_FOLDER = ""          # e.g. "~/AlphaBurstRhythm/Code"  If you have opened the code from the project, you don't need to modify this line. Otherwise, select where the code folder that contains the config_paths.R is
 
 local({
   cand = c(if (nzchar(CODE_FOLDER)) file.path(path.expand(CODE_FOLDER), "config_paths.R"),
@@ -56,7 +53,6 @@ local({
 })
 
 source(file.path(path2code, "00_Setup_PackageInstallation.R"))
-
 source(file.path(path2code, "SupplementaryTables_Helper.R"))
 
 
@@ -76,7 +72,6 @@ n_bootstraps = 1000  # Iterations for bootstrapped confidence intervals
 # Additional single-visit exclusion: it crashed during Specparam by burst. 
 ADDITIONAL_EXCLUSIONS = c("SUB-XCM45B")
 
-
 # =============================================================================
 # SECTION 2: PATH DEFINITIONS
 # =============================================================================
@@ -84,13 +79,12 @@ ADDITIONAL_EXCLUSIONS = c("SUB-XCM45B")
 
 # IMPORTANT: Update only `path2root` to match your local directory structure.
 # Sub-folders derive from it and mirror the manuscript organisation (README).
-# path2data : merged/analysis-ready input data (read-only here)
+# path2data : OSF provided data
 # path2tabs : MLM burst-impact result tables
 # path2desc : Extended Data Table 2 (by-burst descriptives)
 
 path2data = path2sets   # EDIT   # = Data/; this script prepends "" to each file name
 # path2root comes from config_paths.R
-
 path2tabs = file.path(path2root, "MainText",  "Tables", "BurstImpact")  # burst-impact MLM tables
 path2desc = file.path(path2root, "ExtendedData",  "Tables")             # Extended Data Table 2 (descriptive)
 
@@ -101,7 +95,7 @@ for (p in c(path2tabs, path2desc)) if (!dir.exists(p)) dir.create(p, recursive =
 # =============================================================================
 
 # --- Electrode map ---
-# chinclu == 1 marks the 60 pre-selected analysis channels.
+# chinclu == 1: filter the 60 pre-selected analysis channels to be comparable to other large studies.
 # Remap electrode region abbreviations to full display labels for manuscript tables
 electrodes = read_csv(file.path(path2data, "electrodes.csv")) |>
   dplyr::select(label, region, hemis, chinclu) |>
@@ -128,7 +122,7 @@ eeg_desc = read_csv(file.path(path2data, "CrossVisit_EEG_CleaningDescriptives.cs
     session_age = if_else(session_age == 40, 42, session_age)
   )
 
-# --- Sociodemographic / longitudinal age data ---
+# --- Sociodemographic/longitudinal age data ---
 # GestationalAge_weeks and z-scored SES covariates are used as confound controls.
 desc_and_ages = read_csv(file.path(path2data, "Sociodemographic_Descriptives_Long_Updated.csv")) |>
   filter(
@@ -147,12 +141,6 @@ desc_and_ages_wide = desc_and_ages |>
   dplyr::select(sujid, contains("mean"), GestationalAge_weeks) |>
   distinct() |>
   filter(sujid %in% eeg_desc$sujid) |>
-  # Mean-impute ITN_mean so no participant is dropped due to a single missing SES value
-  # ITN_mean is mean-imputed only if present. It is not a covariate in any
-  # model here; it is swept in by select(contains("mean")) and is absent
-  # from the public data release (see prepare_public_data.R). any_of()
-  # makes this a no-op when the column is not there.
-  mutate(across(any_of("ITN_mean"), ~ if_else(is.na(.x), mean(.x, na.rm = TRUE), .x))) |>
   mutate(across(where(is.numeric), ~ scale(.x)[, 1]))
 
 # Combined descriptives frame (left anchor for all data merges)
@@ -163,12 +151,9 @@ descriptives = left_join(
   left_join(desc_and_ages_wide) |>
   filter(!is.na(prop_epochs))
 
-# --- Burst-conditioned aperiodic / oscillatory data ---
+# --- Burst-conditioned aperiodic/oscillatory data ---
 # This file contains separate Specparam estimates for burst-cycle and non-burst-cycle
 # epochs (column: burst = "burst" | "noburst").
-# NOTE: 'mae' is the Specparam MAE column
-# It is filtered here under its raw column name, and then renamed to 'mae'
-#'epochs' is renamed from 'epochs'.
 
 aper_voi = c("sujid", "session_age", "ch", "region", "chinclu", "r2value",
               "goodch", "offset", "slope", "alpha_freq", "alpha_ampl",
@@ -178,7 +163,6 @@ aper_voi = c("sujid", "session_age", "ch", "region", "chinclu", "r2value",
 aperiodic_data = read_csv(file.path(path2data, "Aperiodic_Oscillatory_ByCycle_Long_Burst.csv")) |>
   dplyr::select(all_of(aper_voi)) |>
   # Rename epochc to epochs for consistency across datasets
-  rename(epochs = epochs) |>
   # Quality filters: R², MAE, analysis channels, minimum epochs, min good channels
   filter(
     r2value > r2_thresh,
@@ -203,7 +187,7 @@ aperiodic_data = read_csv(file.path(path2data, "Aperiodic_Oscillatory_ByCycle_Lo
     .groups   = "drop"
   ) |>
   mutate(
-    # Harmonize session_age labels: raw CSV uses 15to18mo and 40to42mo (see PROJECT_NAMING_CONVENTIONS.md)
+    # Harmonize session_age labels: raw CSV uses 15to18mo and 40to42mo
     session_age = if_else(session_age == 15, 18, session_age),
     session_age = if_else(session_age == 40, 42, session_age),
     # Standardize burst labels to match all other scripts ("Burst" / "Non-Burst") and set factor levels
@@ -425,7 +409,7 @@ for (item in metrics_config) {
         group_by(sujid, burst) |>
         summarise(
           pow                  = mean(pow,                  na.rm = TRUE),
-          prop_epochs           = mean(prop_epochs,           na.rm = TRUE),
+          prop_epochs          = mean(prop_epochs,           na.rm = TRUE),
           Cohort               = first(Cohort),
           GestationalAge_weeks = first(GestationalAge_weeks),
           model_fit            = if ("model_fit" %in% names(model_data))
@@ -502,12 +486,6 @@ for (item in metrics_config) {
 # =============================================================================
 # SECTION 5: TABLE GENERATION & EXPORT
 # =============================================================================
-# All tables use standardised formatting:
-#   - Greek β symbol (Unicode \u03B2) for coefficient columns
-#   - R² symbol (\u00b2)
-#   - Bold rows where FDR-corrected p < .05
-#   - theme_booktabs() + fix_border_issues() + autofit()
-#   - Footer notes describing the model, FDR correction, and CI method
 
 # ---------------------------------------------------------------------------
 # TABLE: Main Effect of Burst and Interaction (Burst*Session_Age (i.e., Visit))
@@ -627,7 +605,7 @@ if (length(results_list_main) > 0) {
     padding(padding = 1, part = "all") |>
     flextable::font(fontname = "Arial", part = "all") |> fontsize(size = 10, part = "all") |>
     align(i = 1, part = "header", align = "center") |> # Centers the new grouped headers
-    save_as_html(path = file.path(path2tabs, "Complementary_Fig4_Table_MLM_BurstImpact_by_Visit.html"))
+    save_as_html(path = file.path(path2tabs, "Complementary_Fig_4_Table_MLM_BurstImpact_by_Visit.html"))
 
 }
 
@@ -732,7 +710,7 @@ if (length(emmeans_list) > 0) {
     fontsize(size = 10, part = "all") |>
     theme_booktabs() |> fix_border_issues() |> autofit() |>
       bold(i = 1, part = "header") |>
-    save_as_html(path = file.path(path2tabs, paste0("Complementary_Fig4_Table_MLM_BurstImpact_by_Visit_", v, ".html")))
+    save_as_html(path = file.path(path2tabs, paste0("Complementary_Fig_4_Table_MLM_BurstImpact_by_Visit_", v, ".html")))
 
 }
 } else {
