@@ -418,7 +418,7 @@ if (pred_model) {
       fixed_formula = as.formula(paste(
         f, "~ band_amp_corrected + avg_burst_duration + prop_bursty_epochs +
              alpha_LAcH + region + r2value + prop_epochs + age_months +
-             GestationalAge_weeks + )"
+             GestationalAge_weeks + (1|sujid)"
       ))
 
       m = tryCatch(lmerTest::lmer(fixed_formula, data = age_data),
