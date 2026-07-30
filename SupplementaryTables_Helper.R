@@ -140,7 +140,7 @@ NN_TABLE_INDEX = list(
 # -----------------------------------------------------------------------------
 nn_supp_dir = function() {
   root = if (exists("path2root", envir = globalenv())) get("path2root", envir = globalenv()) else getwd()
-  d = file.path(root, "SupplementaryInformation", "Results", "Tables", "SupplementaryTables")
+  d = file.path(root, "SupplementaryInformation", "SupplementaryTables")
   if (!dir.exists(d)) dir.create(d, recursive = TRUE, showWarnings = FALSE)
   d
 }
