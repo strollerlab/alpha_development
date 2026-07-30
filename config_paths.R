@@ -19,7 +19,7 @@
 # =============================================================================
 
 # --- 1. Where the code lives (this folder) -----------------------------------
-path2code = "/Users/jr4545/Desktop/Alpha Development Public Release/Scripts/"
+path2code = ""
 
 # --- 2. The data folder ------------------------------------------------------
 # ONE FLAT FOLDER holding every CSV from the data download. There is no Merged/
@@ -34,12 +34,12 @@ path2code = "/Users/jr4545/Desktop/Alpha Development Public Release/Scripts/"
 #   electrodes.csv
 #   Sociodemographic_Descriptives_Long_Updated.csv   (keyed by sujid)
 #   Sociodemographic_SES_delinked.csv                (keyed by demo_id)
-path2data = "/Users/jr4545/Desktop/Alpha Development Public Release/Data Anonymized/"
+path2data = ""
 
 # --- 3. Where results are written --------------------------------------------
 # Results/Figures/... and Results/Tables/... are created automatically beneath
 # this root on first run. It does not need to exist beforehand.
-path2root = "/Users/jr4545/Desktop/Alpha Development Public Release/Results/"
+path2root = ""
 
 # =============================================================================
 # Nothing below this line needs editing.
