@@ -1,8 +1,8 @@
 % =============================================================================
 % ALPHA BURST DEVELOPMENT PROJECT
-% Script: Figures_S3_S4_S5_topomaps_fieldtrip.m
+% Script: Figures_S1_S2_S3_topomaps_fieldtrip.m
 % Purpose: Creates mean scalp topographies per metric x visit (Supplementary
-%          Figs. S3-S5) from the merged topological heatmap CSV, using
+%          Figs. S1-S3) from the merged topological heatmap CSV, using
 %          fieldtrip topoplot.
 % -----------------------------------------------------------------------------
 % MANUSCRIPT NOMENCLATURE Table 1 term
@@ -28,8 +28,8 @@ clear
 %% Load the data
 % EDIT only path2root. Output sub-folder mirrors the manuscript taxonomy (README).
 % This script creates and saves the topographic heat maps for:
-%   Fig S3 (aperiodic + oscillatory PSD), Fig S4 (burst properties),
-%   Fig S5 (Alpha lifespan)           
+%   Fig S1 (aperiodic + oscillatory PSD), Fig S2 (burst properties),
+%   Fig S3 (Alpha lifespan)           
 %   Fig SM3 (parametrized quality metrics: R2/MAE) for Supplementary Methods. 
 %   All are written here by variable name; sort the
 %   R2/MAE panels into Figures/SupplementaryMethods/ when assembling SM3.
@@ -38,18 +38,19 @@ path2data        = ''; % EDIT
 path2root        = '';  % EDIT
 path2figs        = fullfile(path2root, 'SupplementaryInformation', 'GeneralInformation', 'Figures', 'IndividualTopomaps');  
 
-electrode_layout = '~/AlphaBurstRhythm/Data/egi128_layout.sfp'; % EDIT 
-path2field       = '~/toolboxes/fieldtrip-20181231/'; % EDIT
-datapath         = '';   % folder holding the EEG fake dataset that hold the electrodes layout (EEG.mat)
-dataname_set     = 'EEG.mat'; % name of that .mat file. For easiness, instead of providing a EEGlab dataset, here we give you a dummy MATLAB structure with the information and format necessary to run the code. 
+% electrode_layout = ''; Not needed because we are using a dummy EEG set. 
+path2field       = ''; % EDIT
+datapath         = '';   % folder holding the EEG fake dataset that holds the electrodes layout (EEG.mat)
+dataname_set     = 'EEG.mat'; % name of that .mat file. For ease, instead of providing an EEGLAB dataset, here we give you a dummy MATLAB structure with the information and format necessary to run the code. 
 %% ==== END OF USER CONFIGURATION ==========================================
 
 load(dataname_set)
 addpath(genpath(path2field))
 
-EEG = pop_loadset(dataname_set, datapath); % Load the dummy dataset
-EEG = pop_select(EEG, 'channel', elect);
-EEG = eeglab2fieldtrip(EEG,'preprocessing');
+% This code was commented because an EEG.mat with the layout is already provided. 
+%EEG = pop_loadset(dataname_set, datapath); % Load the dummy dataset
+%EEG = pop_select(EEG, 'channel', elect);
+%EEG = eeglab2fieldtrip(EEG,'preprocessing');
 
 if ~exist(fullfile(path2figs, 'individual_topomaps'), 'dir')
     mkdir(path2figs)
@@ -109,7 +110,7 @@ groups(5).col_labels = {'R²', 'MAE'};
 groups(5).type_activit = 'ModelFit';
 
 % Conditions (Sub-Columns) - In our case it is visit age
-block_keys     = unique(data.session_age); % Individual "block" values. Modify if your "Block" of interest in another one. 
+block_keys     = unique(data.session_age); % Individual "block" values. Modify if your "Block" of interest is another one. 
 block_titles   = {'1mo.', '6mo.', '12mo.', '18mo.', '30mo.', '36mo.', '42mo.', '48mo.'}; % Labels X Axis: Needs to map order of unique(data.XX)
 all_vars       = data.Properties.VariableNames;
 
@@ -158,7 +159,7 @@ for g_idx = 1:length(groups)
         % --- Loop through Blocks/Ages (Columns) ---
         for col_idx = 1:n_cols
             cur_age = block_keys(col_idx);
-            cur_age_title = block_titles{col_idx}; % It is called cur_age_title because this study used ages. Indiferent if these are conditions, blocks, etc. 
+            cur_age_title = block_titles{col_idx}; % It is called cur_age_title because this study used ages. Indifferent if these are conditions, blocks, etc. 
             
             % Create Subplot (Single Row)
             h_axes(1, col_idx) = subplot(n_rows, n_cols, col_idx);
