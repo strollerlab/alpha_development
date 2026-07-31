@@ -2,9 +2,6 @@
 #  CODE Notes
 # -----------------------------------------------------------------------------
 # MANUSCRIPT NOMENCLATURE - Table 1 term
-#   Column identifiers below are an on-disk CSV / cross-script DATA CONTRACT and
-#   are intentionally NOT renamed (would break the pipeline + OSF data). Display
-#   labels and this map carry the manuscript terminology.
 #     r2value                 -> Model fit (R²)
 #     mae                     -> Mean squared error (MAE)
 #     slope                   -> Aperiodic slope
@@ -35,7 +32,7 @@
 # ---------------------------------------------------------------------------
 # config_paths.R is looked for in the working directory. If R was started
 # somewhere else, set CODE_FOLDER on the next line to this script's folder.
-CODE_FOLDER = ""          # e.g. "~/AlphaBurstRhythm/Code"  If you have open the code from the project, you don't need to modify this line. Otherwise, select where the code folder that contains the config_paths.R is
+CODE_FOLDER = ""          # e.g. "~/AlphaBurstRhythm/Code"  If you have opened the code from the project, you don't need to modify this line. Otherwise, select where the code folder that contains the config_paths.R is
 
 local({
   cand = c(if (nzchar(CODE_FOLDER)) file.path(path.expand(CODE_FOLDER), "config_paths.R"),
@@ -145,8 +142,7 @@ descriptives = left_join(
   left_join(desc_and_ages_wide) |>
   filter(!is.na(prop_epochs))
 
-# --- Aperiodic / oscillatory data ---
-# Note: 'mae' is the raw Specparam MAE column name; displayed as 'mae' in tables/figures.
+# --- Aperiodic/oscillatory data ---
 aper_voi = c("sujid", "session_age", "ch", "region", "chinclu", "epochs",
               "r2value", "mae", "goodch", "offset", "slope",
               "alpha_freq", "alpha_ampl", "alpha_osc", "alpha_peak",
@@ -209,7 +205,6 @@ plot_elec = ggplot(electrodes_labels,
   theme(legend.position = "right", legend.direction = "vertical") +
   labs(x = "Age (months)", y = "Mean # Retained Electrodes", fill = "Region")
 
-
 # =============================================================================
 # SECTION 5: R² AND MAE DUAL-AXIS BOXPLOT
 # =============================================================================
@@ -228,7 +223,7 @@ aperiodic_region = aperiodic_raw |>
   summarise(r2_mean = mean(r2_mean), mae_mean = mean(mae_mean), .groups = "drop")
 
 scale_factor = 1
-offset       = 0.9  # Shifts MAE boxes into the [0.9, 1] display range
+offset       = 0.9  # Shifts MAE boxes into the [0.9, 1] display range. O.9 is because R2 >= 0.9.
 
 fit_plot = ggplot(aperiodic_region, aes(x = factor(session_age))) +
   geom_boxplot(aes(y = r2_mean),
@@ -249,7 +244,6 @@ fit_plot = ggplot(aperiodic_region, aes(x = factor(session_age))) +
     axis.line.y.right  = element_line(color = "black")
   ) +
   labs(x = "Age (months)")
-
 
 # =============================================================================
 # SECTION 6: PSD RESIDUAL ERROR CURVES
