@@ -6,7 +6,7 @@ reflect a transition from transient bursts to sustained oscillations."*
 Python, R, and MATLAB code that extracts the EEG metrics, builds the analysis
 datasets, fits the statistical models, and renders every figure and table in the
 manuscript and supplement. All the data to run the analysis can be found in the 
-companion OSF data repository ().
+companion OSF data repository (https://osf.io/zhqke/).
 
 This README covers (1) getting it running, (2) the output taxonomy, (3) the
 supplementary-statistics pipeline, and (4) the naming convention. 
