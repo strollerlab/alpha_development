@@ -1,9 +1,9 @@
 # =============================================================================
 # ALPHA BURST DEVELOPMENT PROJECT
 # ----------------------------------------------------------------------------
-# MANUSCRIPT NOMENCLATURE - Table 1 term to columns
+# MANUSCRIPT NOMENCLATURE - Table 1 term
 #
-#   DATA CONTRACT columns to DISPLAY LABELS (used in plot y-axis/legend labels):
+#    columns to DISPLAY LABELS (used in plot y-axis/legend labels):
 #     slope                   → "Slope" (Aperiodic slope)
 #     offset                  → "Offset" (Aperiodic offset)
 #     peak_freq               → "Peak Freq." (Alpha Peak Frequency, Hz)
