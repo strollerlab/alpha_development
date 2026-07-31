@@ -9,8 +9,8 @@
 # PATHS: edit config_paths.R once; nothing in this file needs changing.
 # ---------------------------------------------------------------------------
 # config_paths.R is looked for in the working directory. If R was started
-# somewhere else, set CODE_FOLDER on the next line to this script's folder.
-CODE_FOLDER = ""          # e.g. "~/AlphaBurstRhythm/Code"  If you have open the code from the project, you don't need to modify this line. Otherwise, select where the code folder that contains the config_paths.R is
+
+CODE_FOLDER = ""          # e.g. "~/AlphaBurstRhythm/Code"  If you have opened the code from the project, you don't need to modify this line. Otherwise, select where the code folder that contains the config_paths.R is
 
 local({
   cand = c(if (nzchar(CODE_FOLDER)) file.path(path.expand(CODE_FOLDER), "config_paths.R"),
@@ -31,8 +31,6 @@ library(patchwork)
 library(stats) 
 
 # Output: Figure 1 (main text). Edit only `path2root`
-# Figures/MainText/ to match the manuscript organization (see README).
-# path2root comes from config_paths.R
 path2figs = file.path(path2root, "MainText", "Figures")
 if (!dir.exists(path2figs)) dir.create(path2figs, recursive = TRUE)
 path2save = file.path(path2figs, "Fig1_SchematicRepresentation_AlphaDevelopment_Metrics.jpeg")
@@ -394,7 +392,7 @@ Fcum <- ggplot(data.frame(lag = lagsF, cum = cumv), aes(lag, cum)) +
 Frow <- (pipeline | Fraw | Fthr | Fcum) + plot_layout(widths = c(1.5, 1.0, 1.0, 1.0))
 
 # ============================================================================
-# MASTER GRID  — five grouped section letters A-E (NO per-leaf auto-tagging)
+#  Five grouped section letters A-E (NO per-leaf auto-tagging)
 # ============================================================================
 # Row 1: Section A (development spectra) | Section B panels (time-series/spectrum)
 row1 <- (pA | pB)   + plot_layout(widths = c(1.25, 1))
