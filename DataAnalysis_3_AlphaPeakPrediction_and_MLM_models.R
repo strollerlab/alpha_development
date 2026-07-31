@@ -185,7 +185,7 @@ burst_data = read_csv(file.path(path2data, "BurstProperties_ByCycle_Long.csv")) 
     session_age = if_else(session_age == 15, 18, session_age),
     session_age = if_else(session_age == 40, 42, session_age)
   ) |>
-  dplyr::select(-c(volt_amp_corrected, band_amp_corrected, rise_decay_asym, peak_trough_asym)) |>
+  dplyr::select(-any_of(c("volt_amp_corrected", "band_amp_corrected", "rise_decay_asym", "peak_trough_asym"))) |>
   group_by(sujid, session_age, ch, region, is_burst) |>
   summarise(across(where(is.numeric), ~ mean(.x, na.rm = TRUE)), .groups = "drop") |>
   # Wide format: separate columns for Burst vs. NoBurst values, enables ratio calculation
