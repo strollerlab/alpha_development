@@ -2,9 +2,6 @@
 #  CODE Notes
 # -----------------------------------------------------------------------------
 # MANUSCRIPT NOMENCLATURE - code identifier -> Table 1 term
-#   Naming convention (see NOMENCLATURE_CROSSWALK.md):
-#     - the rhythmicity metric is `lifespan` (never "lifetime")
-#
 #   DATA columns -> DISPLAY LABELS (used in plot y-axis/legend labels):
 #     volt_amp / *_corrected   -> "Volt. Amp."       (Voltage Amplitude, absolute/corrected)
 #     band_amp / *_corrected   -> "Band Amp."        (Band Amplitude, absolute/corrected)
@@ -14,7 +11,7 @@
 #     alpha_LAcH               -> "Lifespan"         (Alpha lifespan in cycles; LAcH cumsum >=90%)
 #     is_burst / burst_type    -> "Cycle Type"       ("Burst" vs. "NoBurst")
 #     prop_epochs              -> "Clean Epochs"     (EEG-quality covariate, z-scored)
-#     mae (raw specparam col)  -> reported as MAE (mean absolute error)
+#     mae                      -> reported as MAE (mean absolute error)
 # -----------------------------------------------------------------------------
 # Script: DatasetCreation_2a_Burst_and_Lifespan.R
 # Purpose: Processes burst_properties_bycycle CSVs per age; computes burst duration, bursty cycles, corrected amplitudes, and frequency bands.
@@ -68,13 +65,13 @@ electrodes = readr::read_csv(file.path(path2data, "electrodes.csv"))%>%
   ))
 
 mintime     = 15 # Minimum time in seconds of data to be included in the analysis. This is based on the minimum number of bursty cycles we can capture with a 3s epoch (see Methods). We apply this threshold at the subject level, so if a subject has at least one session with more than 15s of bursty data, they are included in the analysis.
-# Notice this inclusion is different with respect the other scripts in which we exclude based on the number of epochs. This is because the adjusted epoch duration test. To unify the code in both non-normalized and length-normalized epochs, excluding based on time was better approach than multiple conditionals on the code. 
+# Notice this inclusion is different with respect to the other scripts in which we exclude based on the number of epochs. This is because of the adjusted epoch duration test. To unify the code in both non-normalized and length-normalized epochs, excluding based on time was a better approach than multiple conditionals in the code. 
 ages        = STUDY_VISITS
 
 
 bursti      = TRUE
 alpha_range = 'adapted' # adapted (each age had one range)
-freqob      = TRUE     # If true the frequencies are only based on burst cycles for the lagged coherence lifespan. 
+freqob      = TRUE     # If true, the frequencies are only based on burst cycles for the lagged coherence lifespan. 
 
 lcohi       = FALSE
 lcoh_type   = 'hilb'
@@ -141,9 +138,7 @@ for (age in ages) {
       bursty_cycles = left_join(bursty_cycles, burst_cycles_absolute)
       
       # MANUSCRIPT Table 1 -> "Prop. of Epochs w/ Burst" (Prop. of epochs containing bursts
-      # to total number of epochs). The unit of aggregation is the EPOCH, so both the
-      # intermediate flag and the emitted column are named `*_epochs` (the legacy
-      # "segment" spelling has been retired; "segment" and "epoch" were always synonyms here).
+      # to total number of epochs). 
       bursty_epochs = tdata%>%
         group_by(sujid, band, ch, epoch)%>%
         summarise(bursty_epochs = if_else(sum(is_burst == "True" | is_burst == T, na.rm = TRUE)>0,1,0))%>%
@@ -153,7 +148,7 @@ for (age in ages) {
       
       tdata = tdata%>%
         group_by(sujid, band, ch, epoch)%>%
-        mutate(volt_amp_corrected     = volt_amp/ mean(volt_amp[is_burst=="False" | is_burst == F], na.rm = TRUE))%>%
+        mutate(volt_amp_corrected     = volt_amp/ mean(volt_amp[is_burst=="False" | is_burst == F], na.rm = TRUE))%>% # Legacy that is not congruent w/ other papers using this metric. Afterwards is recomputed.
         mutate(band_amp_corrected = band_amp/ mean(band_amp[is_burst=="False" | is_burst == F], na.rm = TRUE))%>%
         mutate(rise_decay_asym   = (time_rdsym / (time_rdsym + time_ptsym)) - .5,
                peak_trough_asym  = (time_peak / (time_peak + time_trough)) - .5)%>%
