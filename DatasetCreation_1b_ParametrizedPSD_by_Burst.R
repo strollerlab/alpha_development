@@ -2,10 +2,6 @@
 # ALPHA BURST DEVELOPMENT PROJECT
 # -----------------------------------------------------------------------------
 # MANUSCRIPT NOMENCLATURE - code identifier -> Table 1 term
-#   Naming convention (see NOMENCLATURE_CROSSWALK.md):
-#     - proportions are `prop_*`  (never `per_*` / `percentage_*`)
-#     - the unit of segmentation is the `epoch` (never "segment")
-#     - the rhythmicity metric is `lifespan` (never "lifespan")
 #
 #   DATA columns -> DISPLAY LABELS (used in plot y-axis/legend labels):
 #     offset                   -> "Offset"           (Aperiodic offset)
@@ -28,7 +24,7 @@
 # Purpose: Computes specparam-based aperiodic and oscillatory parameters for
 #          burst-conditioned cycle segments. Three types of data are created:
 #
-#          (a) Absolute / relative band power (avg_pow_band_burst* files)
+#          (a) Absolute/relative band power (avg_pow_band_burst* files)
 #          (b) specparam aperiodic + oscillatory parameters (aperosc_parameters_burst*)
 #              with individualized alpha band power, fitted separately for burst
 #              and no-burst cycle segments.
@@ -37,7 +33,7 @@
 #              band limits.
 #
 #          Run this script AFTER script DatasetCreation of the specparam (standard specparam creation) and
-#          burst (burst properties), since it reads the frequency band files that these generates.
+#          burst (burst properties), since it reads the frequency band files that these generate.
 #
 # =============================================================================
 # Inputs:
@@ -237,7 +233,7 @@ for (age in ages) {
       filter(chinclu == 1) |>  # Restrict to pre-selected electrode set before quality evaluation
       dplyr::select(sujid, ch, r2value, mae, epochs, burst) |>
       mutate(goodch = sum(r2value > r2_thresh & mae < mae_thresh),  .by = c(sujid, burst)) |>
-      mutate(ch_prop = mean(goodch) / n(),                            .by = c(sujid, burst)) |>
+      mutate(ch_prop = mean(goodch) / n(),                           .by = c(sujid, burst)) |>
       mutate(
         inclusion_electrode_epochs = epochs >= epochs_threshold,
         inclusion_electrode_rsq    = r2value > r2_thresh,
@@ -267,7 +263,7 @@ for (age in ages) {
              theta_peak = as.integer(!is.na(theta_freq)))
 
     # --- Subject-level average alpha peak frequency and width (stratified by burst condition) ---
-    # Inclusion: high-quality R² fit, detected alpha peak, width < 3 Hz (outlier threshold).
+    # Inclusion: R² fit, detected alpha peak, width < 3 Hz (outlier threshold).
     # Mean for frequency (across-channel balance); median for width (robust to rare wide outliers).
     pow_and_aper = pow_and_aper |>
       mutate(
@@ -343,7 +339,7 @@ for (age in ages) {
         .groups   = "drop"
       )
 
-    # Merge computed burst-conditioned band powers back into parameter file (standardise bursttoburst on merge key)
+    # Merge computed burst-conditioned band powers back into parameter file (standardise burst on merge key)
     pow_and_aper = merge(pow_and_aper, band_powers, by = c("sujid", "ch", "burst"))
 
     # Save channel-level aperiodic/oscillatory file
@@ -410,7 +406,7 @@ for (age in ages) {
                        pattern = "lagged_coh_py_hilb_coh_burst.*\\.csv$",
                        recursive = TRUE, full.names = TRUE)
 
-    # Known-problematic subject at 48 months — causes memory crashes
+    # Known subject who crashed at 48 months due to memory.
     if (age == 48) sets = sets[!grepl("SUB-RXVYKG", sets)]
 
     # Load frequency band files (separately for no-burst and burst conditions)
@@ -443,7 +439,7 @@ for (age in ages) {
       sfreq_burst = filter(frequencies_burst, sujid == unique(sdata$sujid))
 
       # Compute normalized cumulative LCoH
-      # This code can be recycled to compute your-own Lifespan
+      # This code can be recycled to compute Lifespan
       sdata = sdata |>
         mutate(total   = sum(LAcH),   .by = c(sujid, burst, freq, ch)) |>
         mutate(clcoh   = LAcH / total, .by = c(sujid, burst, freq, ch)) |>
