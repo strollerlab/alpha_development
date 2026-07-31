@@ -1,11 +1,7 @@
 # =============================================================================
 #  CODE Notes
 # -----------------------------------------------------------------------------
-# MANUSCRIPT NOMENCLATURE - code identifier -> Table 1 term
-#   Naming convention (see NOMENCLATURE_CROSSWALK.md):
-#     - proportions are `prop_*`  (never `per_*` / `percentage_*`)
-#     - the unit of segmentation is the `epoch` (never "segment")
-#     - the rhythmicity metric is `lifespan` (never "lifespan")
+# MANUSCRIPT NOMENCLATURE - code identifier -> Table 1 terms
 #
 #   DATA columns -> DISPLAY LABELS (used in plot y-axis/legend labels):
 #     offset                   -> "Offset"           (Aperiodic offset)
@@ -43,9 +39,9 @@
 #   - Data/psds_aperosc_long_region*.csv
 #   - Data/electrodes.csv
 # Outputs saved to path2figs:
-#   - Fig2_ParametrizedPSD_Development_WholeBrain_FullGAMMModeled.jpeg   (Parametrized Power-Spectrum GAMM curves and aperiodic/oscillatory power-spectrum)
-#   - Fig3_AlphaBurst_and_Lifespan_Development_WholeBrain_FullGAMMModeled.jpeg (Burst and Lifespan GAMM curves and cummulative plot/heatmap of lagged coherence)
-#   - Fig4_BurstVsNonBurst_AperOsc_WholeBrain.jpeg (burst vs. non-burst segments barplots and power-spectrum/alpha cummultive plot/heatmap)               
+#   - Fig_2_ParametrizedPSD_Development_WholeBrain_FullGAMMModeled.jpeg   (Parametrized Power-Spectrum GAMM curves and aperiodic/oscillatory power-spectrum)
+#   - Fig_3_AlphaBurst_and_Lifespan_Development_WholeBrain_FullGAMMModeled.jpeg (Burst and Lifespan GAMM curves and cumulative plot/heatmap of lagged coherence)
+#   - Fig_4_BurstVsNonBurst_AperOsc_WholeBrain.jpeg (burst vs. non-burst segments barplots and power-spectrum/alpha cumulative plot/heatmap)               
 #   - Extended_Data_Fig_3_BurstDuration_Development_WholeBrain_FullGAMMModeled.jpeg    (GAMM curve of burst duration development)
 #   - Extended_Data_Fig_4_BurstImpact_AlphaLifespan_by_Visit.jpeg. (burst vs. non-burst segments alpha lifespan barplot)
 # Dependencies: 00_Setup_PackageInstallation.R, 01_Utils_ProcFunctions.R
@@ -56,7 +52,7 @@
 # ---------------------------------------------------------------------------
 # config_paths.R is looked for in the working directory. If R was started
 # somewhere else, set CODE_FOLDER on the next line to this script's folder.
-CODE_FOLDER = ""          # e.g. "~/AlphaBurstRhythm/Code"  If you have open the code from the project, you don't need to modify this line. Otherwise, select where the code folder that contains the config_paths.R is
+CODE_FOLDER = ""          # e.g. "~/AlphaBurstRhythm/Code"  If you have opened the code from the project, you don't need to modify this line. Otherwise, select where the code folder that contains the config_paths.R is
 
 local({
   cand = c(if (nzchar(CODE_FOLDER)) file.path(path.expand(CODE_FOLDER), "config_paths.R"),
@@ -85,7 +81,6 @@ epochs_threshold = EPOCHS_THRESHOLD  # Minimum clean epochs per electrode (5)
 # Colour scheme for derivative/age-effect significance bars beneath GAMM curves.
 # moments_colors_main: main age-effect bars (Increase/Decrease/No Change mapped to COLORS_GRADIENT)
 # moments_colors_burst: burst-interaction bars (Diverging modes/Parallel mapped separately)
-# These are NOT used directly in plots, but match the inc_or_dec values in change_files CSVs.
 
 moments_colors_main  = c("Increase" = COLORS_GRADIENT[2], "Decrease" = COLORS_GRADIENT[7], "No Change" = "gray90")
 moments_colors_burst = c("Diverging (-)" = COLORS_GRADIENT[2], "Diverging (+)" = COLORS_GRADIENT[7], "Parallel" = "gray90")
@@ -153,7 +148,7 @@ desc_and_ages_wide = desc_and_ages |>
 electrodes = read_csv(file.path(path2data, "electrodes.csv"),
                        show_col_types = FALSE) |>
   dplyr::select(label, region, hemis, chinclu) |>
-  # Recode electrode region codes to a more legible labels
+  # Recode electrode region codes to more legible labels
   # region: Fr = Frontal, P = Parietal, T = Temporal, O = Occipital, C = Central
   mutate(region = case_when(
     region == "Fr" ~ "Frontal", region == "P" ~ "Parietal",
@@ -180,9 +175,9 @@ aperiodic_data = read_csv(file.path(path2data, "Aperiodic_Oscillatory_ByCycle_Lo
   dplyr::select(all_of(aper_voi)) |>
   group_by(session_age, sujid) |>
   # Quality filters: FOOOF R², MAE, electrode inclusion, epoch count, channel quality
-  filter(r2value > r2_thresh, mae < mae_thresh, chinclu == 1,
+  filter(r2value >= r2_thresh, mae <= mae_thresh, chinclu == 1,
          epochs >= epochs_threshold, goodch > CH_THRESHOLD,
-         !(sujid == "SUB-XCM45B" & session_age == 48)) |>  # Exclude a participant who crashed 
+         !(sujid == "SUB-XCM45B" & session_age == 48)) |>  # Exclude a participant who crashed during processing 
   # Collapse creating the single whole-brain metric
   summarise(
     slope     = mean(slope,                       na.rm = TRUE),
@@ -220,7 +215,6 @@ hlcoh_data     = left_join(hlcoh_data,     descriptives, by = c("session_age", "
 burst_data     = left_join(burst_data,     descriptives, by = c("session_age", "sujid")) |>
   filter(inclusion_lmm == 1, dev_filter == 1, !sujid %in% EXCLUDED_SUBJECTS)
 
-
 # =============================================================================
 # SECTION 4: PSD DATA
 # =============================================================================
@@ -255,11 +249,7 @@ psd_data = lapply(psd_data_files, read_csv, show_col_types = FALSE) |> bind_rows
 # =============================================================================
 # SECTION 4B: FULL-GAMM TRAJECTORY
 # =============================================================================
-# For comparability with the analysis, in which we included covariates, GAMM curves are drawn from the full model (DataAnalysis_1) rather than a simple smooth of the raw data.
-# Thus: model formulas, k, random effects, corCAR1 form, REML and
-# lmeControl are the exact same as DataAnalysis_1 (Parts A & B). The only
-# display-side transform is a single additive vertical alignment (OVERLAY_SHIFT)
-# so the fitted curve overlays the raw scatter.
+# For comparability with the analysis, in which we included covariates, GAMM curves are drawn from the full model (DataAnalysis_1).
 
 # Prediction grid resolution
 GRID_N        = 200
@@ -267,7 +257,6 @@ CI_MULT       = 1.96
 OVERLAY_SHIFT = TRUE
 
 # --- Aperiodic/oscillatory data REGION-STRATIFIED (for GAMM with region random effects) ---
-# Unlike aperiodic_data, this retains region/region for model fitting (allows region curves)
 aper_voi_reg = c("sujid", "session_age", "mae", "ch", "region", "chinclu", "epochs",
                  "r2value", "goodch", "offset", "slope",
                  "alpha_freq", "alpha_ampl", "alpha_osc", "alpha_peak", "inclusion_final_dummy")
@@ -421,7 +410,6 @@ gamm_full_interaction = function(f, align_to = NULL) {
   if (is.null(m)) return(NULL)
 
   # ---- Prediction: separate trajectories for Burst and Non-Burst across age ----
-  # Reference region, mean covariates; is_burst_ord levels control which trajectory is predicted
   agerng = range(model_data$age_months, na.rm = TRUE)
   ages   = seq(agerng[1], agerng[2], length.out = GRID_N)
   levs   = levels(model_data$is_burst_ord)
@@ -763,7 +751,7 @@ lcoh_combined        = ggpubr::ggarrange(plot_burst_combined1, lcoh_tileplot,
 lcoh_and_burst_plot  = ggpubr::ggarrange(lcoh_combined, lcoh_plot_FG, ncol = 1, nrow = 2)
 
 ggsave(
-  filename = file.path(path2figs, "Fig3_AlphaBurst_and_Lifespan_Development_WholeBrain_FullGAMMModeled.jpeg"),
+  filename = file.path(path2figs, "Fig_3_AlphaBurst_and_Lifespan_Development_WholeBrain_FullGAMMModeled.jpeg"),
   plot     = lcoh_and_burst_plot,
   width = 30, height = 18, dpi = 300, units = "cm"
 )
@@ -772,7 +760,7 @@ ggsave(
 # =============================================================================
 # SECTION 9: BURST VS. NON-BURST APERIODIC / OSCILLATORY PANELS (Bar charts)
 # =============================================================================
-# Bar charts comparing aperiodic / oscillatory metrics between burst and
+# Bar charts comparing aperiodic/oscillatory metrics between burst and
 # non-burst cycle segments. Significance stars overlaid from pre-computed emmeans.
 
 # --- Burst-conditioned aperiodic data ---
@@ -785,7 +773,7 @@ aperiodic_data_b = read_csv(file.path(path2data, "Aperiodic_Oscillatory_ByCycle_
   dplyr::select(all_of(aper_voi_b)) |>
   group_by(session_age, sujid, region, burst) |>
   filter(r2value > r2_thresh, chinclu == 1, epochs >= epochs_threshold,
-         goodch >= CH_THRESHOLD, sujid != "SUB-XCM45B") |> # This participant crashed when parametrized the psd with only bursts/non-bursts 
+         goodch >= CH_THRESHOLD, sujid != "SUB-XCM45B") |> # This participant crashed when parametrizing the PSD with only bursts/non-bursts 
   group_by(session_age, sujid, burst) |>
   summarise(
     slope     = mean(slope,                       na.rm = TRUE),
@@ -813,7 +801,7 @@ hlcoh_data_b = read_csv(file.path(path2data, "LaggedCoh_Hilb_ByCycle_Long_Burst.
   mutate(session_age = if_else(session_age == 15, 18, session_age))
 
 # Significance overlay data from pre-computed emmeans contrasts
-emmeans_results = read.csv(file.path(path2data, "Extended_Results_MLM_Emmeans_Stratified_by_visit.csv"), # This file is generated in DataAnalysis Code
+emmeans_results = read.csv(file.path(path2data, "Extended_Results_MLM_Emmeans_Stratified_by_visit.csv"), # This file is generated in DataAnalysis_2 Code
                             header = TRUE) |>
   mutate(stars = Burst_sig) |>
   rename(p.value.fdr = Burst_sig)|>
@@ -940,7 +928,7 @@ plot_lcoh = ggpubr::ggarrange(lcoh_lifeplot_diff, lcoh_tileplot_burst,
                               widths = c(1, 1.5))
 
 ggsave(
-  filename = file.path(path2figs, "Fig4_BurstImpact_ParametrizedPSD_LAcH.jpeg"),
+  filename = file.path(path2figs, "Fig_4_BurstImpact_ParametrizedPSD_LAcH.jpeg"),
   plot = ggpubr::ggarrange(plot_trajectories_comb, plot_lcoh, ncol = 1, nrow = 2,
                            heights = c(2, 1)),
   width = 30, height = 27, dpi = 300, units = "cm"
