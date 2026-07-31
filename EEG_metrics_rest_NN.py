@@ -279,9 +279,9 @@ if aperosc == 1:
     peak_width_limits = [2, 12] # Allowed oscillatory-peak bandwidth (Hz)
     max_n_peaks       = 5       # Max number of periodic peaks specparam may fit
     min_peak_height   = 0.05    # Minimum peak height (above the aperiodic fit) to be retained
-    peak_treshold     = 2       # Peak selection threshold (in SD of the flattened spectrum)
+    peak_threshold     = 2       # Peak selection threshold (in SD of the flattened spectrum)
     rsquare_threshold = 0.90    # Final-fit R^2 acceptance threshold (goodness of aperiodic+periodic fit)
-    aperiodic_mode    = 'fixed' # Aperiodic component form: 'fixed' (no spectral knee) per Methods
+    aperiodic_mode    = 'fixed' # Aperiodic component form: 'fixed' (no spectral knee). It is not adapted to the 'knee' yet!
 
     ## If you are performing a reduction by excluding the bad fit epochs
     # epoch-selection / pre-fitting strategy used to guard against noisy single-trial
@@ -290,7 +290,7 @@ if aperosc == 1:
     rsquare_threshold_interim = .90  # R^2 cutoff applied during the interim (pre-group) fit used to flag/discard bad epochs
     perelect                  = 0.80 # Minimum fraction of electrodes that must pass rsquare_threshold_interim for a epoch-group to be retained
     epochs_multi              = 1    # 1 = iterate over every group size in `nepochs_group_multi`; 0 = use the single `nepochs_group_prec` value instead
-    nepochs_group_multi       = [9999, 10]  # epoch-group sizes to test when epochs_multi == 1 (9999 is a sentinel meaning "no grouping / fit all epochs together" in our studies. If you foreseen more than 9999 epochs in your study just increase it to an unreasonable number)
+    nepochs_group_multi       = [9999, 10]  # epoch-group sizes to test when epochs_multi == 1 (9999 is a sentinel meaning "no grouping / fit all epochs together" in our studies. If you foresee more than 9999 epochs in your study, just increase it to an unreasonable number)
     nepochs_group_prec        = 5    # Fallback single group size when epochs_multi == 0
     psd_fmaxs                 = [15, 20, 40]  # Upper fit-frequency bounds compared across runs (noise check on fmax)
 
@@ -722,7 +722,7 @@ for s, set_file in enumerate(set_files):
                                         "peak_width_limits": peak_width_limits,
                                         "max_n_peaks": max_n_peaks,
                                         "min_peak_height": min_peak_height,
-                                        "peak_threshold": peak_treshold,
+                                        "peak_threshold": peak_threshold,
                                         "aperiodic_mode": aperiodic_mode}
 
                                     if blocks == 0:
@@ -743,7 +743,7 @@ for s, set_file in enumerate(set_files):
                                         # screening (fit_pregroups) to discard poorly-fit trial subsets
                                         # before the final fit -- see jrpc.interim_fooof_epochselection.
                                         aperosc_results, fooofpsd = jrpc.interim_fooof_epochselection(tpsds, freqs, ch_names, fit_pregroups, fmin, fidx,
-                                                                           peak_width_limits, max_n_peaks, min_peak_height, peak_treshold,
+                                                                           peak_width_limits, max_n_peaks, min_peak_height, peak_threshold,
                                                                            rsquare_threshold_interim, perelect, bands_ranges, aperiodic_mode=aperiodic_mode, nepochs_group=nepochs_group)
 
                                         # Tag the fit-result rows with full provenance (method + band
