@@ -5,7 +5,7 @@ SCRIPT ROLE (pipeline stage 1 of 2)
 ------------------------------------------------------------------------------
 Burst-conditioned feature-extraction script for the Alpha Burst manuscript.
 This script re-reads the same cleaned resting-state .set files as
-`EEG_metrics_rest_v5.py`, but re-derives PSD-based measures split by burst
+`EEG_metrics_rest_NN.py`, but re-derives PSD-based measures split by burst
 status (burst vs. no-burst epochs, per channel), using the epoch-level
 `burst_properties_bycycle.csv` and the LAcH `.npy` matrix produced by that
 first-stage script as inputs:
@@ -105,7 +105,7 @@ multicomp  = 0   # 1 = split set_files across parallel jobs/machines using the q
 stepm      = 1   # Which half/quarter of the split this job should take when multicomp == 1 (1 or 2; see block below)
 rewritei   = 1   # Passed through to jrpc.save_dataframe: 1 = overwrite existing output CSVs, 0 = do not overwrite
 numchar    = 8   # Number of leading characters of the raw filename used as sujid when rename == 0
-nversion   = 0   # Which is the version you are running? If set to 0 no version added, otherwise vZ to skip files
+nversion   = 0   # Which version are you running? If set to 0, no version added; otherwise vZ to skip files
 
 # ---- Participant-ID renaming (maps raw filenames manuscript subject IDs; MUST
 #      match the mapping used in the stage-1 run for the same cohort/visit) --------
@@ -120,7 +120,7 @@ if upsidedown == 1 :
    set_files = set_files[::-1]
 
 # Multi-machine/parallel batching: carve the file list into a subset for this run
-# (see EEG_metrics_rest_v5.py for the full explanation of this splitting logic;
+# (see EEG_metrics_rest_NN.py for the full explanation of this splitting logic;
 # it does not affect which participants are eventually processed, only which
 # machine handles which subset in a given run).
 if multicomp == 1 :
@@ -162,14 +162,6 @@ theta = [3, 5]
 alpha = [6, 9]
 beta  = [12, 20]
 gamma = [21, 45]
-
-# Burst-detection band actually used in stage-1 (documented here so stage-2 can
-# check independence). Set this to whatever stage-1's `burst_alpha` was.
-burst_detect_band = [7, 10]
-if list(burst_detect_band) == list(alpha):
-    print("NOTE [PB02]: burst-detection band {} equals the stage-2 power alpha "
-          "band {}. Allowed, but the burst-conditioned power contrast is then "
-          "not independent of the detection band.".format(burst_detect_band, alpha))
 
 # Only computed/needed if abspow or aperosc is requested - MODIFY
 if abspow == 1 or aperosc == 1: #We save this information compute this information if necessary
@@ -214,7 +206,7 @@ if abspow == 1 or aperosc == 1: #We save this information compute this informati
 
     methodpsd       = 2     #Hanning window = 1, Welch = 2, Spectopo like = 3, Multitaper Auto = 4, Multitaper Manual = 5
     badnwidth_res   = 'NA'  # Frequency resolution when multitapers used, recommended 1 or 2
-    n_tapers        = 'NA'  # Number tapers in manual - recomended 3
+    n_tapers        = 'NA'  # Number of tapers in manual - recommended 3
     n_perseg        = 2000  #Welch and spectopo number of timepoints to run the fft (e.g., 1000 with 1000 srate = 1s)
     n_overlap       = 1000  #Welch and spectopo points of overlapping (e.g., in 2000 timewindow 1000 will be 50% overlap)
 
@@ -306,7 +298,7 @@ if aperosc == 1:
 burst_filename = 'burst_properties_bycycle'  # Stem of stage-1's per-participant bycycle output CSV (must match jrpc.save_dataframe's base_filename there)
 
 ###############################################################################
-# Lagged hilbert autocoherence
+# Lagged Hilbert auto-coherence
 ###############################################################################
 # Hilbert-based lagged auto-coherence (LAcH), re-split by burst vs. no-burst
 # epoch status. Sweep settings (frequency/lag ranges) mirror stage-1's; what
@@ -361,9 +353,9 @@ if laggedcoh_hil == 1 :
     else:
         suf = ""
 
-    # Append the surrogate-threshold suffix to both stems; `basefile_lcoh`
+    # Append the surrogate-threshold suffix to both stems; `basefile_lcoh.`
     # additionally gets '_burst' so the output CSV name self-documents that
-    # it holds burst-conditioned (not raw) LAcH values, while `matfile_lcoh`
+    # it holds burst-conditioned (not raw) LAcH values, while `matfile_lcoh.`
     # deliberately does NOT get '_burst' since it must still resolve to
     # stage-1's original (unconditioned) .npy filename on disk.
     basefile_lcoh = basefile_lcoh + suf + '_burst'
