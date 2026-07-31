@@ -2,8 +2,6 @@
 # ALPHA BURST DEVELOPMENT PROJECT
 # -----------------------------------------------------------------------------
 # MANUSCRIPT NOMENCLATURE - Table 1 term to columns
-#   These on-disk CSV column identifiers are intentionally NOT renamed to preserve
-#   pipeline integrity and reproducibility. Display labels map here to manuscript text.
 #
 #   DATA CONTRACT columns to DISPLAY LABELS (used in plot y-axis/legend labels):
 #     slope                  to"Slope" (Aperiodic slope)
