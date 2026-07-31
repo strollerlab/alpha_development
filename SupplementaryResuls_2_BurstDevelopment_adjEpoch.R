@@ -2,9 +2,6 @@
 #  CODE Notes
 # -----------------------------------------------------------------------------
 # MANUSCRIPT NOMENCLATURE - Table 1 term
-#   Column identifiers below are an on-disk CSV / cross-script names can be found in Crosswalk Naming file
-#   are intentionally NOT renamed (would break the pipeline + Github data). Display
-#   labels and this map carry the manuscript terminology.
 #     prop_bursty_epochs     -> Prop. epochs w/ Alpha burst
 #     prop_bursty_cycles_burst -> Prop. cycles w/ alpha burst
 #     is_burst / burst_type   -> cycle type: burst vs. non-burst
@@ -21,7 +18,7 @@
 # Outputs (all saved to path2tabs / path2figs):
 #   - Supplementary_Results_Table_WholeBrain_GAMM_Development_burst_adjEpoch.html
 #   - Supplementary_Results_Table_WholeBrain_GAMM_Development_burstInteraction_adjEpoch.html
-#   - FigSR2_WholeBrain_GAMM_BurstDevelopment_AdjEpoch.jpeg
+#   - Fig_SR2_WholeBrain_GAMM_BurstDevelopment_AdjEpoch.jpeg
 # Dependencies: 00_Setup_PackageInstallation.R
 # =============================================================================
 
@@ -95,7 +92,7 @@ eeg_desc = read_csv(file.path(path2data, "CrossVisit_EEG_CleaningDescriptives.cs
     session_age = if_else(session_age == 40, 42, session_age)
   )
 
-# --- Sociodemographic / longitudinal age data ---
+# --- Sociodemographic/longitudinal age data ---
 # Harmonize age cohorts (15 to 18, 40 to 42 months) in longitudinal data
 desc_and_ages = read_csv(file.path(path2data, "Sociodemographic_Descriptives_Long_Updated.csv")) |>
   filter(dev_filter == 1, !sujid %in% EXCLUDED_SUBJECTS, sujid %in% eeg_desc$sujid) |>
@@ -105,21 +102,16 @@ desc_and_ages = read_csv(file.path(path2data, "Sociodemographic_Descriptives_Lon
   )
 
 # Wide format for covariates: extract all "mean" columns (e.g., PNC_mean, ITN_mean, etc.)
-# and z-score them for model entry. Impute missing ITN_mean with sample mean.
+# and z-score them for model entry. Impute missing ITN_mean with the sample mean.
 desc_and_ages_wide = desc_and_ages |>
   dplyr::select(sujid, contains("mean"), GestationalAge_weeks) |>
   distinct() |>
   filter(sujid %in% eeg_desc$sujid) |>
-  # ITN_mean is mean-imputed only if present. It is not a covariate in any
-  # model here; it is swept in by select(contains("mean")) and is absent
-  # from the public data release (see prepare_public_data.R). any_of()
-  # makes this a no-op when the column is not there.
-  mutate(across(any_of("ITN_mean"), ~ if_else(is.na(.x), mean(.x, na.rm = TRUE), .x))) |>
   mutate(across(where(is.numeric), ~ scale(.x)[, 1]))  # z-score all numeric covariates
 
 # --- Electrode map ---
 # Standardize region labels from abbreviations (Fr, P, T, O) to full names
-# and filter to included electrodes (chinclu == 1).
+# and filter to included electrodes in the ROIs (chinclu == 1).
 electrodes = read_csv(file.path(path2data, "electrodes.csv")) |>
   dplyr::select(label, region, hemis, chinclu) |>
   mutate(region = case_when(
@@ -156,7 +148,7 @@ burst_data = left_join(descriptives, burst_data) |>
   filter(inclusion_lmm == 1, dev_filter == 1, !sujid %in% EXCLUDED_SUBJECTS)
 
 # =============================================================================
-# PART A: WHOLE-BRAIN MAIN AGE EFFECTS (Burst presence metrics only)
+# PART 1: WHOLE-BRAIN MAIN AGE EFFECTS (Burst presence metrics only)
 # =============================================================================
 
 metrics_config = list(
@@ -274,7 +266,7 @@ for (item in metrics_config) {
 
 
 # =============================================================================
-# PART B: BURST × AGE INTERACTION EFFECTS
+# PART 2: BURST × AGE INTERACTION EFFECTS
 # =============================================================================
 # Fits a difference-smooth GAMM: s(age_months) + s(age_months, by=is_burst_ord)
 # The difference smooth tests whether Burst and No Burst trajectories diverge over age.
@@ -408,7 +400,7 @@ for (f in inter_voi) {
 
 
 # =============================================================================
-# PART C: TABLE EXPORT — WHOLE-BRAIN
+# PART 3: TABLE EXPORT — WHOLE-BRAIN
 # =============================================================================
 
 # --- Table 1: Whole-Brain Main Age Effects ---
@@ -548,7 +540,7 @@ print("--- WHOLE-BRAIN MODELS (ADJUSTED EPOCH) COMPLETE ---")
 
 
 # =============================================================================
-# PART D: FIGURE SR2
+# PART 4: FIGURE SR2
 # =============================================================================
 # Plot adjusted-epoch burst development trajectories with fitted GAMM curves and change annotations.
 
@@ -574,7 +566,6 @@ ref_level = function(x) if (is.numeric(x)) mean(x, na.rm = TRUE) else levels(fac
 
 # Generate predicted trajectories for main age-effect models.
 # Prediction grid spans observed age range at reference levels of all other covariates.
-# Optional OVERLAY_SHIFT aligns curve to raw data mean for visual comparison (shape unchanged).
 predict_main_curve = function(fit_obj, align_to = NULL) {
   m  = fit_obj$m
   md = fit_obj$data
@@ -748,6 +739,6 @@ plot_bottom = ggpubr::ggarrange(plotlist = plot_list_burst, ncol = 2, common.leg
 plot_final  = ggpubr::ggarrange(plot_top, plot_bottom, ncol = 1, nrow = 2)
 
 # Export Figure SR2: GAMM trajectories for adjusted-epoch analysis
-ggsave(filename = file.path(path2figs, "FigSR2_WholeBrain_GAMM_BurstDevelopment_AdjEpoch.jpeg"),
+ggsave(filename = file.path(path2figs, "Fig_SR2_WholeBrain_GAMM_BurstDevelopment_AdjEpoch.jpeg"),
        plot = plot_final, width = 6.5, height = 6.5, dpi = 300)
 
