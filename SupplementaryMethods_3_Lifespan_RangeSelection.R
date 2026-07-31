@@ -2,24 +2,14 @@
 #  CODE Notes
 # -----------------------------------------------------------------------------
 # MANUSCRIPT NOMENCLATURE - Table 1 term to columns
-#   These on-disk CSV column identifiers are intentionally NOT renamed to preserve
-#   pipeline integrity and reproducibility. Display labels map here to manuscript text.
-#
 #   DATA columns to DISPLAY LABELS (used in plot y-axis/legend labels):
 #     alpha_LAcH              → "Lifespan" (Alpha lifespan in cycles; LAcH cumsum ≥90%)
 # -----------------------------------------------------------------------------
 # Script: SupplementaryMethods_3_Lifespan_RangeSelection.R
 # Purpose: Supplementary analysis comparing two alpha frequency band definition
 #          strategies to compute alpha Lifespan:
-#            OB (Only-Burst): band edges estimated from burst-cycle peak frequencies
-#            AC (All-Cycles): band edges estimated from all-cycle peak frequencies
-#
-#          Sections:
-#            A. Frequency band parameter comparison (mean freq. & range)
-#            B. LAcH value comparison (OB vs. AC) — table and bar plot
-#            C. LMM testing whether OB vs. AC differs across development
-#            D. Per-visit follow-up LMMs (if significant interaction found)
-#            E. LAcH bar-chart figure
+#            OB (Only-Burst): band range estimated from burst-cycle peak frequencies
+#            AC (All-Cycles): band range estimated from all-cycle peak frequencies
 # =============================================================================
 # Inputs:
 #   - Data/frequency_bands_onlyburst_adapted_*.csv   (one per age)
@@ -37,13 +27,12 @@
 #   - alpha_lifespan_by_freq_selection.jpeg
 # Dependencies: 00_Setup_PackageInstallation.R, 01_Utils_ProcFunctions.R
 # =============================================================================
-
 # ---------------------------------------------------------------------------
 # PATHS: edit config_paths.R once; nothing in this file needs changing.
 # ---------------------------------------------------------------------------
 # config_paths.R is looked for in the working directory. If R was started
 # somewhere else, set CODE_FOLDER on the next line to this script's folder.
-CODE_FOLDER = ""          # e.g. "~/AlphaBurstRhythm/Code"  If you have open the code from the project, you don't need to modify this line. Otherwise, select where the code folder that contains the config_paths.R is
+CODE_FOLDER = ""          # e.g. "~/AlphaBurstRhythm/Code"  If you have opened the code from the project, you don't need to modify this line. Otherwise, select where the code folder that contains the config_paths.R is
 
 local({
   cand = c(if (nzchar(CODE_FOLDER)) file.path(path.expand(CODE_FOLDER), "config_paths.R"),
@@ -90,11 +79,9 @@ if (!dir.exists(path2figs)) dir.create(path2figs, recursive = TRUE)
 # SECTION 3: FREQUENCY BAND COMPARISON (OB vs. AC)
 # =============================================================================
 # OB and AC files share the same structure. session_age is inferred from the
-# filename; the 15-month file uses the study label 15 but represents 18 months
+# filename.
 
-# Helper: extract session_age integer from filename, remapping acquisition labels to analysis visit-ages.
-# Filenames use nominal acquisition labels (15 mo. = 18 mo.; 42 mo. label is used directly).
-# Returns analysis age for harmonization across all downstream scripts.
+# Helper: extract session_age integer from filename.
 extract_age_from_filename = function(filepath) {
   dplyr::case_when(
     grepl("1mo",  filepath) ~ 1,
@@ -108,7 +95,7 @@ extract_age_from_filename = function(filepath) {
     grepl("48mo", filepath) ~ 48)
 }
 
-# Load OB (Only-Burst) frequency band definitions: edges estimated from burst-cycle peak frequencies
+# Load OB (Only-Burst) frequency band definitions: ranges estimated from burst-cycle peak frequencies
 freqs_files    = list.files(path2freqs, pattern = "frequency_bands", full.names = TRUE)
 freqs_files_ob = freqs_files[grepl("onlyburst_adapted", freqs_files)]
 
@@ -117,7 +104,7 @@ data_freq = lapply(freqs_files_ob, function(f) {
   read.csv(f) |> mutate(session_age = extract_age_from_filename(f), freq_group = "OB")
 }) |> bind_rows()
 
-# Load AC (All-Cycles) frequency band definitions: edges estimated from all-cycle peak frequencies
+# Load AC (All-Cycles) frequency band definitions: ranges estimated from all-cycle peak frequencies
 freqs_files_ac = freqs_files[grepl("allcycles_adapted", freqs_files)]
 
 data_freq_allcycles = lapply(freqs_files_ac, function(f) {
@@ -169,7 +156,7 @@ flextable(data_combined) |>
   bold(part = "header")|>
   padding(padding = 1, part = "all") |>
   flextable::font(fontname = "Arial", part = "all") |> fontsize(size = 10, part = "all") |>
-  save_as_docx(path = file.path(path2tabs, "TableSM1_Complementary_Table_AlphaLifespan_FrequencySelection_Ranges.docx"))
+  save_as_docx(path = file.path(path2tabs, "Table_SM1_Complementary_Table_AlphaLifespan_FrequencySelection_Ranges.docx"))
 
 
 # =============================================================================
@@ -188,7 +175,7 @@ eeg_desc = read_csv(file.path(path2data, "CrossVisit_EEG_CleaningDescriptives.cs
     session_age = if_else(session_age == 40, 42, session_age)
   )
 
-# --- Sociodemographic / longitudinal age data ---
+# --- Sociodemographic/longitudinal age data ---
 # age_months = exact chronological age at the visit (used as the GAMM smooth).
 # SES covariates are z-scored; missing values are mean-imputed so no participant
 # is lost from a model due to a single missing covariate.
@@ -204,11 +191,6 @@ desc_and_ages_wide = desc_and_ages |>
   dplyr::select(sujid, contains("mean"), GestationalAge_weeks) |>
   distinct() |>
   filter(sujid %in% eeg_desc$sujid) |>
-  # ITN_mean is mean-imputed only if present. It is not a covariate in any
-  # model here; it is swept in by select(contains("mean")) and is absent
-  # from the public data release (see prepare_public_data.R). any_of()
-  # makes this a no-op when the column is not there.
-  mutate(across(any_of("ITN_mean"), ~ if_else(is.na(.x), mean(.x, na.rm = TRUE), .x))) |>
   mutate(across(where(is.numeric), ~ scale(.x)[, 1]))
 
 # --- Electrode map ---
@@ -295,7 +277,7 @@ hlcoh_data_combined |>
   bold(part = "header")|>
   padding(padding = 1, part = "all") |>
   flextable::font(fontname = "Arial", part = "all") |> fontsize(size = 10, part = "all") |>
-  save_as_docx(path = file.path(path2tabs, "TableSM2_AlphaLifespan_Differences_FrequencySelection.docx"))
+  save_as_docx(path = file.path(path2tabs, "Table_SM2_AlphaLifespan_Differences_FrequencySelection.docx"))
 
 
 # =============================================================================
@@ -551,6 +533,6 @@ if (nrow(emmeans_results) > 0) {
 }
 
 ggsave(p_fig,
-       filename = file.path(path2figs, "FigSM4_AlphaLifespan_FrequencySelection.jpeg"),
+       filename = file.path(path2figs, "Fig_SM4_AlphaLifespan_FrequencySelection.jpeg"),
        width = 5, height = 4.5, dpi = 300)
 
