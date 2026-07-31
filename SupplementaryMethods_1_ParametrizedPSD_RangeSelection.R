@@ -1,9 +1,9 @@
 # =============================================================================
 #  CODE Notes
 # -----------------------------------------------------------------------------
-# MANUSCRIPT NOMENCLATURE - Table 1 term
+# MANUSCRIPT NOMENCLATURE - Table 1 terms
 #     r2value                 -> Model fit (R²)
-#     mae                     -> Mean squared error (MAE)
+#     mae                     -> Mean absolute error (MAE)
 #     slope                   -> Aperiodic slope
 #     offset                  -> Aperiodic offset
 #     maxfreq                 -> Maximum fitting frequency cutoff (15, 30, 45 Hz)
@@ -22,7 +22,7 @@
 # Inputs:
 #   - Specparam parameter files (aperosc_parameters_*.csv) and PSD error files (aperosc_psds_*.csv) for each visit and max-frequency level. See README taxonomy for details.
 # Outputs (all to path2save):
-# - FigSM1_ParametrizedPSD_Range_Selection.jpeg
+# - Fig_SM1_ParametrizedPSD_Range_Selection.jpeg
 # - SupplementaryMethods_Complementary_Table_ParametrizedPSD_Range_Comparison_Analysis_**visit**_summary.html
 # - SupplementaryMethods_Complementary_Table_ParametrizedPSD_Range_Comparison_Analysis_**visit**_pairwise_followup.html
 # Dependencies: 00_Setup_PackageInstallation.R, 01_Utils_ProcFunctions.R
@@ -111,11 +111,6 @@ desc_and_ages_wide = desc_and_ages |>
   dplyr::select(sujid, contains("mean"), GestationalAge_weeks) |>
   distinct() |>
   filter(sujid %in% eeg_desc$sujid) |>
-  # ITN_mean is mean-imputed only if present. It is not a covariate in any
-  # model here; it is swept in by select(contains("mean")) and is absent
-  # from the public data release (see prepare_public_data.R). any_of()
-  # makes this a no-op when the column is not there.
-  mutate(across(any_of("ITN_mean"), ~ if_else(is.na(.x), mean(.x, na.rm = TRUE), .x))) |>
   mutate(across(where(is.numeric), ~ scale(.x)[, 1]))
 
 # --- Electrode map ---
@@ -254,7 +249,7 @@ for (visit in visits) {
   # Pairwise comparison: Friedman omnibus test + post-hoc Wilcoxon (FDR).
   # Restricts to fully-paired subjects with data at all three maxfreq levels (15, 30, 45 Hz).
   data |>
-    filter(global_inclusion == 1, ch_inclusion == 1, r2value >= r2_thresh, goodch >= CH_THRESHOLD) |>
+    filter(global_inclusion == 1, ch_inclusion == 1, r2value >= r2_thresh, goodch >= CH_THRESHOLD, mae <= mae_thresh) |>
     group_by(sujid, maxfreq) |>
     summarise(r2 = mean(r2value, na.rm = TRUE), mae = mean(mae, na.rm = TRUE),
               perch = mean(goodch) / 60, .groups = "drop") |>
@@ -357,7 +352,6 @@ fit_plot = ggplot(fit_data, aes(x = factor(maxfreq))) +
 
 psd_data = bind_rows(data_psd_agg)
 psd_data = psd_data |>
-  # Recode session_age to categorical labels for faceting (typo in original 'sesion_age' preserved)
   mutate(session_age = factor(sesion_age, labels = paste(visits, 'mo.'), levels = visits))
 
 psds_plot = ggplot(psd_data,
