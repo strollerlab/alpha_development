@@ -2,10 +2,6 @@
 # ALPHA BURST DEVELOPMENT PROJECT
 # -----------------------------------------------------------------------------
 # MANUSCRIPT NOMENCLATURE - code identifier -> Table 1 term
-#   Naming convention (see NOMENCLATURE_CROSSWALK.md):
-#     - proportions are `prop_*`  (never `per_*` / `percentage_*`)
-#     - the unit of segmentation is the `epoch` (never "segment")
-#     - the rhythmicity metric is `lifespan` (never "lifetime")
 #
 #   DATA columns -> DISPLAY LABELS (used in plot y-axis/legend labels):
 #     offset                   -> "Offset"           (Aperiodic offset)
@@ -25,7 +21,7 @@
 #     mae (raw specparam col)  -> reported as MAE (mean absolute error)
 # -----------------------------------------------------------------------------
 # Script: DatasetCreation_4_Topomaps.R
-# Purpose: Creates channel-level averaged dataset for topographic heatmap visualization (aperiodic + coherence + burst).
+# Purpose: Creates electrode-level averaged dataset for topographic heatmap visualization (aperiodic + coherence + burst).
 # =============================================================================
 # Dependencies: 00_Setup_PackageInstallation.R
 # =============================================================================
@@ -56,7 +52,7 @@ source(file.path(path2code, "00_Setup_PackageInstallation.R"))
 # path2data comes from config_paths.R
 # NOTE: This is a DATA-PREP script. Its only output is the intermediate CSV
 # 'topological_heatmaps_data.csv' in path2data, which feeds the MATLAB topomap
-# figures (Fig S3–S5, Fig SM3). It produces no Figures.
+# figures (Fig S1–S3, Fig SM3). It produces no Figures.
 rsq_thresh       = R2_THRESH
 epochs_incl      = EPOCHS_THRESHOLD
 mae_thresh       = MAE_THRESH
@@ -79,10 +75,6 @@ desc_and_ages_wide = desc_and_ages|>
   dplyr::select(sujid, contains('mean'), GestationalAge_weeks)|>
   distinct()|>
   filter(sujid %in% eeg_desc$sujid)|>
-  # Mean-impute ITN_mean (socioeconomic indicator) to avoid dropping participants
-  # Mean-imputed only if present; ITN_mean is not a covariate in any model
-  # here and is absent from the public release (see prepare_public_data.R).
-  mutate(across(any_of("ITN_mean"), ~ if_else(is.na(.x), mean(.x, na.rm = TRUE), .x)))|>
   mutate(across(where(is.numeric), ~scale(.x)[,1]))
 
 # Merge longitudinal visit info (per participant visit) with demographics; remove rows with missing EEG quality
@@ -135,10 +127,6 @@ burst_data = read_csv(paste0(path2data, '/BurstProperties_ByCycle_Long.csv'))|>
   # Compute amplitude correction factors (Burst / NoBurst ratios)
   mutate(volt_amp_corrected = volt_amp_Burst/volt_amp_NoBurst,
          band_amp_corrected = band_amp_Burst/band_amp_NoBurst)|>
-  # Drop NoBurst proportions (not applicable to burst-exclusive metrics); strip the
-  # "_Burst" suffix left by pivot_wider so the emitted topomap columns carry the same
-  # canonical identifiers used everywhere else in the pipeline.
-  # -> consumed by Figures_S3_S4_S5_topomaps_fieldtrip.m (groups(3).vars)
   dplyr::select(-c(prop_bursty_cycles_burst_NoBurst, prop_bursty_epochs_NoBurst))|>
   rename(prop_bursty_cycles_burst = prop_bursty_cycles_burst_Burst,   # -> "Prop. of Cycles w/ Burst"
          prop_bursty_epochs       = prop_bursty_epochs_Burst)         # -> "Prop. of Epochs w/ Burst"
