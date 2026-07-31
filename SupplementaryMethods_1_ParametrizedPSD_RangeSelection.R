@@ -2,9 +2,6 @@
 #  CODE Notes
 # -----------------------------------------------------------------------------
 # MANUSCRIPT NOMENCLATURE - Table 1 term
-#   Column identifiers below are an on-disk CSV / cross-script DATA CONTRACT and
-#   are intentionally NOT renamed (would break the pipeline + OSF data). Display
-#   labels and this map carry the manuscript terminology.
 #     r2value                 -> Model fit (R²)
 #     mae                     -> Mean squared error (MAE)
 #     slope                   -> Aperiodic slope
@@ -72,7 +69,6 @@ my_gradual_palette = c("#B3E5FC", "#9FA8DA", "#7E57C2")
 
 # Apply global flextable defaults (font size, padding, spacing)
 flextable::set_flextable_defaults(font.size = 10, padding = 3, line_spacing = 1)
-
 
 # =============================================================================
 # SECTION 2: PATH DEFINITIONS
@@ -154,10 +150,6 @@ data_plot_fit = list()  # R²/MAE dual-axis boxplots (one per visit → combined
 data_psd_agg  = list()  # PSD residual error plots (one per visit → combined at end)
 
 for (visit in visits) {
-
-
-  # Handle the 18-month visit: data may be stored under both Age15 and Age18;
-  # 42 months is stored as Age40 (see session_age recoding below)
   visit_path = if      (visit == 18) c(15, 18)
              else if (visit == 42) 40
              else                visit
@@ -183,12 +175,10 @@ for (visit in visits) {
   data_psd = lapply(sets_psds, read_csv) |> bind_rows() |>
     filter(ch %in% electrodes$label, is.na(block) | block == "ECrs")
 
-
   aper_voi = c("sujid", "ch", "epochs",
                "r2value", "mae", "slope", "maxfreq")
 
-  # Standardize session age: remap raw labels (15, 40) to canonical labels (18, 42) for consistency
-  # across visits and harmonize with sociodemographic naming.
+  # Standardize session age: remap raw labels (15, 40) to labels (18, 42) for consistency.
   data = data %>%
       dplyr::select(all_of(aper_voi)) |>
     mutate(session_age = visit) |>
@@ -223,14 +213,14 @@ for (visit in visits) {
 
   data = left_join(data, inclusion, by = c("sujid", "maxfreq", "ch"))
 
-  # --- Table: Overall summary (no statistical tests) ---
+  # --- Table: Overall summary ---
   data |>
     filter(global_inclusion == 1, ch_inclusion == 1, goodch >= CH_THRESHOLD) |>
     group_by(sujid, maxfreq) |>
     summarise(
       r2    = mean(r2value, na.rm = TRUE),
       mae   = mean(mae,     na.rm = TRUE),
-      perch = mean(goodch) / 59,  # Proportion of 59 analysis channels retained
+      perch = mean(goodch) / 60,  
       .groups = "drop"
     ) |>
     tbl_summary(
@@ -267,7 +257,7 @@ for (visit in visits) {
     filter(global_inclusion == 1, ch_inclusion == 1, r2value >= r2_thresh, goodch >= CH_THRESHOLD) |>
     group_by(sujid, maxfreq) |>
     summarise(r2 = mean(r2value, na.rm = TRUE), mae = mean(mae, na.rm = TRUE),
-              perch = mean(goodch) / 59, .groups = "drop") |>
+              perch = mean(goodch) / 60, .groups = "drop") |>
     mutate(n_included = n(), .by = sujid) |>
     filter(n_included == length(unique(data$maxfreq[!is.na(data$maxfreq)]))) |>
     tbl_summary(
@@ -305,7 +295,6 @@ for (visit in visits) {
 
 
   # Prepare per-visit R² and MAE summary for side-by-side boxplots (dual-axis visualization).
-  # Data collapse: electrodes → subject-maxfreq → subject only (one row per subject per maxfreq).
   summary_data_2 = data |>
     filter(global_inclusion == 1, ch_inclusion == 1, r2value >= r2_thresh, mae <= mae_thresh) |>
     group_by(sujid, maxfreq, region) |>
@@ -349,17 +338,15 @@ fit_plot = ggplot(fit_data, aes(x = factor(maxfreq))) +
   facet_wrap(~session_age, nrow = 2) + 
   scale_y_continuous(
     name     = "R\u00b2",
-    # FIX 2: Added the missing division (/ scale_factor) for the inverse transformation
     sec.axis = sec_axis(~ (. - offset_val) / scale_factor, name = "MAE") 
   ) +
   
-  # Moved limits here so it zooms instead of deleting out-of-bounds data
   coord_cartesian(ylim = c(0.8, 1)) + 
   
   labs(x = "Max. Frequency (Hz)") +
   THEME_BASE + THEME_TEXT +
   
-  # Consolidated the theme() calls for cleaner code
+  #  Theme() calls for cleaner code
   theme(
     axis.title.y.left  = element_text(color = "steelblue", face = "bold", size = 12, margin = margin(r = 10)),
     axis.title.y.right = element_text(color = "indianred", face = "bold", size = 12, margin = margin(l = 10)),
@@ -396,7 +383,7 @@ combined_plot = ggpubr::ggarrange(
   labels        = c("a", "b"),
   hjust         = -0.1, vjust = 1.5)
 ggsave(combined_plot,
-       filename = file.path(path2figs, "FigSM1_ParametrizedPSD_Range_Selection.jpeg"),
+       filename = file.path(path2figs, "Fig_SM1_ParametrizedPSD_Range_Selection.jpeg"),
        width = 30, height = 30, dpi = 300, unit = 'cm')
 
 
