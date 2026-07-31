@@ -14,8 +14,7 @@
 #         data, with repeated key values merged vertically
 #         Note: Tables went through manual typesetting after the document creation. Format may slightly differ. 
 #
-# Formatting applied automatically from the publication headers, so no call
-# site needs to change:
+# Formatting applied automatically from the publication headers.
 #   * "95% CI lower" + "95% CI upper"  ->  single "95% CI" column as [l, u]
 #   * P columns                         ->  "<0.0001" instead of 0.0000
 #   * a significance column (***/**/*)  ->  added after the FDR-corrected P
@@ -112,7 +111,7 @@ NN_METRIC_ORDER = c(
   "lifespan|lach"
 )
 
-# The Fig. 5d / S8d order
+# The Fig. 5d / Extended Fig. 5 order
 NN_PREDICTOR_ORDER = c(
   "band amp|volt\\.? ?amp",
   "duration",
@@ -130,15 +129,13 @@ nn_rank = function(x, patterns) {
   }, numeric(1), USE.NAMES = FALSE)
 }
 
-# Visits print as "1 mo.", "6 mo." ... so a plain sort would give 1, 12, 18, 6.
 nn_visit_num = function(x) {
   v = suppressWarnings(as.numeric(sub("^[^0-9-]*(-?[0-9.]+).*$", "\\1", as.character(x))))
   ifelse(is.na(v), Inf, v)
 }
 
 # The model-family column arrives as internal codes ("powerspectrum", "burst",
-# "alphalifespan"). Relabel for print AFTER ordering, so the patterns above are
-# matched against the raw codes.
+# "alphalifespan"). 
 NN_FAMILY_LABELS = c(
   powerspectrum = "Power spectrum",
   parametrized  = "Power spectrum",
